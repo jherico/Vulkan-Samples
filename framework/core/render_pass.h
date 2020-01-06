@@ -27,9 +27,9 @@ class Device;
 
 struct LoadStoreInfo
 {
-	VkAttachmentLoadOp load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	vk::AttachmentLoadOp load_op{vk::AttachmentLoadOp::eClear};
 
-	VkAttachmentStoreOp store_op = VK_ATTACHMENT_STORE_OP_STORE;
+	vk::AttachmentStoreOp store_op{vk::AttachmentStoreOp::eStore};
 };
 
 struct SubpassInfo
@@ -39,10 +39,10 @@ struct SubpassInfo
 	std::vector<uint32_t> output_attachments;
 };
 
-class RenderPass
+class RenderPass : protected vk::RenderPass
 {
   public:
-	VkRenderPass get_handle() const;
+	vk::RenderPass get_handle() const;
 
 	RenderPass(Device &                          device,
 	           const std::vector<Attachment> &   attachments,
@@ -64,15 +64,13 @@ class RenderPass
   private:
 	Device &device;
 
-	VkRenderPass handle{VK_NULL_HANDLE};
-
-	size_t subpass_count;
+	size_t subpass_count{0};
 
 	// Store attachments for every subpass
-	std::vector<std::vector<VkAttachmentReference>> input_attachments;
+	std::vector<std::vector<vk::AttachmentReference>> input_attachments;
 
-	std::vector<std::vector<VkAttachmentReference>> color_attachments;
+	std::vector<std::vector<vk::AttachmentReference>> color_attachments;
 
-	std::vector<std::vector<VkAttachmentReference>> depth_stencil_attachments;
+	std::vector<std::vector<vk::AttachmentReference>> depth_stencil_attachments;
 };
 }        // namespace vkb

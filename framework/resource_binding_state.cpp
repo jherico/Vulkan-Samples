@@ -41,7 +41,7 @@ void ResourceBindingState::clear_dirty(uint32_t set)
 	set_bindings[set].clear_dirty();
 }
 
-void ResourceBindingState::bind_buffer(const core::Buffer &buffer, VkDeviceSize offset, VkDeviceSize range, uint32_t set, uint32_t binding, uint32_t array_element)
+void ResourceBindingState::bind_buffer(const core::Buffer &buffer, vk::DeviceSize offset, vk::DeviceSize range, uint32_t set, uint32_t binding, uint32_t array_element)
 {
 	set_bindings[set].bind_buffer(buffer, offset, range, binding, array_element);
 
@@ -89,7 +89,7 @@ void SetBindings::clear_dirty(uint32_t binding, uint32_t array_element)
 	resource_bindings[binding][array_element].dirty = false;
 }
 
-void SetBindings::bind_buffer(const core::Buffer &buffer, VkDeviceSize offset, VkDeviceSize range, uint32_t binding, uint32_t array_element)
+void SetBindings::bind_buffer(const core::Buffer &buffer, vk::DeviceSize offset, vk::DeviceSize range, uint32_t binding, uint32_t array_element)
 {
 	resource_bindings[binding][array_element].dirty  = true;
 	resource_bindings[binding][array_element].buffer = &buffer;

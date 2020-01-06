@@ -39,7 +39,7 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 			// Update name as input and output resources can have the same name
 			if (resource.type == ShaderResourceType::Output || resource.type == ShaderResourceType::Input)
 			{
-				key = std::to_string(resource.stages) + "_" + key;
+				key = vk::to_string(resource.stages) + "_" + key;
 			}
 
 			// Find resource by name in the map
@@ -84,14 +84,14 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 		set_layouts.emplace(it.first, &device.get_resource_cache().request_descriptor_set_layout(it.second));
 	}
 
-	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
+	std::vector<vk::DescriptorSetLayout> descriptor_set_layouts;
 
 	for (auto &it : set_layouts)
 	{
 		descriptor_set_layouts.push_back(it.second->get_handle());
 	}
 
-	std::vector<VkPushConstantRange> push_constant_ranges;
+	std::vector<vk::PushConstantRange> push_constant_ranges;
 
 	for (auto &it : resources)
 	{
@@ -102,7 +102,7 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 			continue;
 		}
 
-		VkPushConstantRange range{};
+		vk::PushConstantRange range;
 
 		range.stageFlags = resource.stages;
 		range.offset     = resource.offset;
@@ -111,7 +111,7 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 		push_constant_ranges.push_back(range);
 	}
 
-	VkPipelineLayoutCreateInfo create_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	vk::PipelineLayoutCreateInfo create_info;
 
 	create_info.setLayoutCount         = to_u32(descriptor_set_layouts.size());
 	create_info.pSetLayouts            = descriptor_set_layouts.data();
@@ -119,37 +119,32 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 	create_info.pPushConstantRanges    = push_constant_ranges.data();
 
 	// Create the Vulkan pipeline layout handle
-	auto result = vkCreatePipelineLayout(device.get_handle(), &create_info, nullptr, &handle);
-
-	if (result != VK_SUCCESS)
-	{
-		throw VulkanException{result, "Cannot create PipelineLayout"};
-	}
+	static_cast<vk::PipelineLayout &>(*this) = this->device.get_handle().createPipelineLayout(create_info);
 }
 
 PipelineLayout::PipelineLayout(PipelineLayout &&other) :
     device{other.device},
-    handle{other.handle},
     shader_modules{std::move(other.shader_modules)},
     resources{std::move(other.resources)},
     set_bindings{std::move(other.set_bindings)},
     set_layouts{std::move(other.set_layouts)}
 {
-	other.handle = VK_NULL_HANDLE;
+	static_cast<vk::PipelineLayout &>(*this) = other;
+	static_cast<vk::PipelineLayout &>(other) = nullptr;
 }
 
 PipelineLayout::~PipelineLayout()
 {
 	// Destroy pipeline layout
-	if (handle != VK_NULL_HANDLE)
+	if (*this)
 	{
-		vkDestroyPipelineLayout(device.get_handle(), handle, nullptr);
+		device.get_handle().destroy(*this);
 	}
 }
 
-VkPipelineLayout PipelineLayout::get_handle() const
+vk::PipelineLayout PipelineLayout::get_handle() const
 {
-	return handle;
+	return static_cast<const vk::PipelineLayout &>(*this);
 }
 
 const std::vector<ShaderModule *> &PipelineLayout::get_stages() const
@@ -184,7 +179,7 @@ std::vector<ShaderResource> PipelineLayout::get_vertex_input_attributes() const
 	// Iterate over all resources
 	for (auto &it : resources)
 	{
-		if (it.second.stages == VK_SHADER_STAGE_VERTEX_BIT &&
+		if (it.second.stages == vk::ShaderStageFlagBits::eVertex &&
 		    it.second.type == ShaderResourceType::Input)
 		{
 			vertex_input_attributes.push_back(it.second);
@@ -201,7 +196,7 @@ std::vector<ShaderResource> PipelineLayout::get_fragment_output_attachments() co
 	// Iterate over all resources
 	for (auto &it : resources)
 	{
-		if (it.second.stages == VK_SHADER_STAGE_FRAGMENT_BIT &&
+		if (it.second.stages == vk::ShaderStageFlagBits::eFragment &&
 		    it.second.type == ShaderResourceType::Output)
 		{
 			fragment_output_attachments.push_back(it.second);
@@ -218,7 +213,7 @@ std::vector<ShaderResource> PipelineLayout::get_fragment_input_attachments() con
 	// Iterate over all resources
 	for (auto &it : resources)
 	{
-		if (it.second.stages == VK_SHADER_STAGE_FRAGMENT_BIT &&
+		if (it.second.stages == vk::ShaderStageFlagBits::eFragment &&
 		    it.second.type == ShaderResourceType::InputAttachment)
 		{
 			fragment_input_attachments.push_back(it.second);
@@ -228,9 +223,9 @@ std::vector<ShaderResource> PipelineLayout::get_fragment_input_attachments() con
 	return fragment_input_attachments;
 }
 
-VkShaderStageFlags PipelineLayout::get_push_constant_range_stage(uint32_t offset, uint32_t size) const
+vk::ShaderStageFlags PipelineLayout::get_push_constant_range_stage(uint32_t offset, uint32_t size) const
 {
-	VkShaderStageFlags stages = 0;
+	vk::ShaderStageFlags stages;
 
 	// Iterate over all resources
 	for (auto &it : resources)

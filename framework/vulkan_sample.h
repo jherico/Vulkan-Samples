@@ -130,7 +130,7 @@ class VulkanSample : public Application
 	 */
 	void load_scene(const std::string &path);
 
-	VkSurfaceKHR get_surface();
+	vk::SurfaceKHR get_surface();
 
 	Device &get_device();
 
@@ -175,10 +175,10 @@ class VulkanSample : public Application
 	std::unique_ptr<Stats> stats{nullptr};
 
 	// All the features the physical device supports
-	VkPhysicalDeviceFeatures supported_device_features{};
+	vk::PhysicalDeviceFeatures supported_device_features;
 
 	// The features to be requested from the logical device
-	VkPhysicalDeviceFeatures requested_device_features{};
+	vk::PhysicalDeviceFeatures requested_device_features;
 
 	/**
 	 * @brief Update scene
@@ -281,7 +281,7 @@ class VulkanSample : public Application
 	/**
 	 * @brief The Vulkan surface
 	 */
-	VkSurfaceKHR surface{VK_NULL_HANDLE};
+	vk::SurfaceKHR surface;
 
 	/**
 	 * @brief The configuration of the sample

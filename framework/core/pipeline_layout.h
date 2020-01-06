@@ -28,7 +28,7 @@ class Device;
 class ShaderModule;
 class DescriptorSetLayout;
 
-class PipelineLayout
+class PipelineLayout : protected vk::PipelineLayout
 {
   public:
 	PipelineLayout(Device &device, const std::vector<ShaderModule *> &shader_modules);
@@ -43,7 +43,7 @@ class PipelineLayout
 
 	PipelineLayout &operator=(PipelineLayout &&) = delete;
 
-	VkPipelineLayout get_handle() const;
+	vk::PipelineLayout get_handle() const;
 
 	const std::vector<ShaderModule *> &get_stages() const;
 
@@ -61,14 +61,12 @@ class PipelineLayout
 
 	std::vector<ShaderResource> get_fragment_input_attachments() const;
 
-	VkShaderStageFlags get_push_constant_range_stage(uint32_t offset, uint32_t size) const;
+	vk::ShaderStageFlags get_push_constant_range_stage(uint32_t offset, uint32_t size) const;
 
   private:
 	Device &device;
 
 	std::vector<ShaderModule *> shader_modules;
-
-	VkPipelineLayout handle{VK_NULL_HANDLE};
 
 	std::map<std::string, ShaderResource> resources;
 

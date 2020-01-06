@@ -30,9 +30,9 @@ struct ResourceInfo
 
 	const core::Buffer *buffer{nullptr};
 
-	VkDeviceSize offset{0};
+	vk::DeviceSize offset{0};
 
-	VkDeviceSize range{0};
+	vk::DeviceSize range{0};
 
 	const core::ImageView *image_view{nullptr};
 
@@ -50,7 +50,7 @@ class SetBindings
 
 	void clear_dirty(uint32_t binding, uint32_t array_element);
 
-	void bind_buffer(const core::Buffer &buffer, VkDeviceSize offset, VkDeviceSize range, uint32_t binding, uint32_t array_element);
+	void bind_buffer(const core::Buffer &buffer, vk::DeviceSize offset, vk::DeviceSize range, uint32_t binding, uint32_t array_element);
 
 	void bind_image(const core::ImageView &image_view, const core::Sampler &sampler, uint32_t binding, uint32_t array_element);
 
@@ -75,7 +75,7 @@ class ResourceBindingState
 
 	void clear_dirty(uint32_t set);
 
-	void bind_buffer(const core::Buffer &buffer, VkDeviceSize offset, VkDeviceSize range, uint32_t set, uint32_t binding, uint32_t array_element);
+	void bind_buffer(const core::Buffer &buffer, vk::DeviceSize offset, vk::DeviceSize range, uint32_t set, uint32_t binding, uint32_t array_element);
 
 	void bind_image(const core::ImageView &image_view, const core::Sampler &sampler, uint32_t set, uint32_t binding, uint32_t array_element);
 
