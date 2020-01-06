@@ -39,7 +39,7 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 			// Since 'Input' and 'Output' resources can have the same name, we modify the key string
 			if (shader_resource.type == ShaderResourceType::Input || shader_resource.type == ShaderResourceType::Output)
 			{
-				key = std::to_string(shader_resource.stages) + "_" + key;
+				key = vk::to_string(shader_resource.stages) + "_" + key;
 			}
 
 			auto it = shader_resources.find(key);
@@ -85,18 +85,18 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 	}
 
 	// Collect all the descriptor set layout handles
-	std::vector<VkDescriptorSetLayout> descriptor_set_layout_handles(descriptor_set_layouts.size());
+	std::vector<vk::DescriptorSetLayout> descriptor_set_layout_handles(descriptor_set_layouts.size());
 	std::transform(descriptor_set_layouts.begin(), descriptor_set_layouts.end(), descriptor_set_layout_handles.begin(),
 	               [](auto &descriptor_set_layout_it) { return descriptor_set_layout_it.second->get_handle(); });
 
 	// Collect all the push constant shader resources
-	std::vector<VkPushConstantRange> push_constant_ranges;
+	std::vector<vk::PushConstantRange> push_constant_ranges;
 	for (auto &push_constant_resource : get_resources(ShaderResourceType::PushConstant))
 	{
 		push_constant_ranges.push_back({push_constant_resource.stages, push_constant_resource.offset, push_constant_resource.size});
 	}
 
-	VkPipelineLayoutCreateInfo create_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+	vk::PipelineLayoutCreateInfo create_info;
 
 	create_info.setLayoutCount         = to_u32(descriptor_set_layout_handles.size());
 	create_info.pSetLayouts            = descriptor_set_layout_handles.data();
@@ -104,37 +104,32 @@ PipelineLayout::PipelineLayout(Device &device, const std::vector<ShaderModule *>
 	create_info.pPushConstantRanges    = push_constant_ranges.data();
 
 	// Create the Vulkan pipeline layout handle
-	auto result = vkCreatePipelineLayout(device.get_handle(), &create_info, nullptr, &handle);
-
-	if (result != VK_SUCCESS)
-	{
-		throw VulkanException{result, "Cannot create PipelineLayout"};
-	}
+	static_cast<vk::PipelineLayout &>(*this) = this->device.get_handle().createPipelineLayout(create_info);
 }
 
 PipelineLayout::PipelineLayout(PipelineLayout &&other) :
     device{other.device},
-    handle{other.handle},
     shader_modules{std::move(other.shader_modules)},
     shader_resources{std::move(other.shader_resources)},
     shader_sets{std::move(other.shader_sets)},
     descriptor_set_layouts{std::move(other.descriptor_set_layouts)}
 {
-	other.handle = VK_NULL_HANDLE;
+	static_cast<vk::PipelineLayout &>(*this) = other;
+	static_cast<vk::PipelineLayout &>(other) = nullptr;
 }
 
 PipelineLayout::~PipelineLayout()
 {
 	// Destroy pipeline layout
-	if (handle != VK_NULL_HANDLE)
+	if (*this)
 	{
-		vkDestroyPipelineLayout(device.get_handle(), handle, nullptr);
+		device.get_handle().destroy(*this);
 	}
 }
 
-VkPipelineLayout PipelineLayout::get_handle() const
+vk::PipelineLayout PipelineLayout::get_handle() const
 {
-	return handle;
+	return static_cast<const vk::PipelineLayout &>(*this);
 }
 
 const std::vector<ShaderModule *> &PipelineLayout::get_shader_modules() const
@@ -142,7 +137,7 @@ const std::vector<ShaderModule *> &PipelineLayout::get_shader_modules() const
 	return shader_modules;
 }
 
-const std::vector<ShaderResource> PipelineLayout::get_resources(const ShaderResourceType &type, VkShaderStageFlagBits stage) const
+const std::vector<ShaderResource> PipelineLayout::get_resources(const ShaderResourceType &type, const vk::ShaderStageFlags& stages) const
 {
 	std::vector<ShaderResource> found_resources;
 
@@ -152,7 +147,7 @@ const std::vector<ShaderResource> PipelineLayout::get_resources(const ShaderReso
 
 		if (shader_resource.type == type || type == ShaderResourceType::All)
 		{
-			if (shader_resource.stages == stage || stage == VK_SHADER_STAGE_ALL)
+			if (shader_resource.stages & stages)
 			{
 				found_resources.push_back(shader_resource);
 			}
@@ -177,9 +172,9 @@ DescriptorSetLayout &PipelineLayout::get_descriptor_set_layout(uint32_t set_inde
 	return *descriptor_set_layouts.at(set_index);
 }
 
-VkShaderStageFlags PipelineLayout::get_push_constant_range_stage(uint32_t offset, uint32_t size) const
+vk::ShaderStageFlags PipelineLayout::get_push_constant_range_stage(uint32_t offset, uint32_t size) const
 {
-	VkShaderStageFlags stages = 0;
+	vk::ShaderStageFlags stages;
 
 	for (auto &push_constant_resource : get_resources(ShaderResourceType::PushConstant))
 	{

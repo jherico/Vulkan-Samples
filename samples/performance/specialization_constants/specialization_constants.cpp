@@ -77,8 +77,8 @@ void SpecializationConstants::ForwardSubpassCustomLights::prepare()
 			variant.add_definitions({"MAX_FORWARD_LIGHT_COUNT " + std::to_string(LIGHT_COUNT)});
 			variant.add_definitions(vkb::light_type_definitions);
 
-			auto &vert_module = device.get_resource_cache().request_shader_module(VK_SHADER_STAGE_VERTEX_BIT, get_vertex_shader(), variant);
-			auto &frag_module = device.get_resource_cache().request_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, get_fragment_shader(), variant);
+			auto &vert_module = device.get_resource_cache().request_shader_module(vk::ShaderStageFlagBits::eVertex, get_vertex_shader(), variant);
+			auto &frag_module = device.get_resource_cache().request_shader_module(vk::ShaderStageFlagBits::eFragment, get_fragment_shader(), variant);
 		}
 	}
 }

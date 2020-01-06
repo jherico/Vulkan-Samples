@@ -130,7 +130,7 @@ class VulkanSample : public Application
 	 */
 	void load_scene(const std::string &path);
 
-	VkSurfaceKHR get_surface();
+	vk::SurfaceKHR get_surface();
 
 	Device &get_device();
 

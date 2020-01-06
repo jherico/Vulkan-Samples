@@ -45,7 +45,7 @@ enum class ShaderResourceType
 /// Used by the shader module.
 struct ShaderResource
 {
-	VkShaderStageFlags stages;
+	vk::ShaderStageFlags stages;
 
 	ShaderResourceType type;
 
@@ -170,11 +170,11 @@ class ShaderSource
 class ShaderModule
 {
   public:
-	ShaderModule(Device &              device,
-	             VkShaderStageFlagBits stage,
-	             const ShaderSource &  glsl_source,
-	             const std::string &   entry_point,
-	             const ShaderVariant & shader_variant);
+	ShaderModule(Device &                device,
+	             vk::ShaderStageFlagBits stage,
+	             const ShaderSource &    glsl_source,
+	             const std::string &     entry_point,
+	             const ShaderVariant &   shader_variant);
 
 	ShaderModule(const ShaderModule &) = delete;
 
@@ -186,7 +186,7 @@ class ShaderModule
 
 	size_t get_id() const;
 
-	VkShaderStageFlagBits get_stage() const;
+	vk::ShaderStageFlagBits get_stage() const;
 
 	const std::string &get_entry_point() const;
 
@@ -205,7 +205,7 @@ class ShaderModule
 	size_t id;
 
 	/// Stage of the shader (vertex, fragment, etc)
-	VkShaderStageFlagBits stage{};
+	vk::ShaderStageFlagBits stage;
 
 	/// Name of the main function
 	std::string entry_point;

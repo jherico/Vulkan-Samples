@@ -28,7 +28,7 @@ class Device;
 class ShaderModule;
 class DescriptorSetLayout;
 
-class PipelineLayout
+class PipelineLayout : protected vk::PipelineLayout
 {
   public:
 	PipelineLayout(Device &device, const std::vector<ShaderModule *> &shader_modules);
@@ -43,11 +43,11 @@ class PipelineLayout
 
 	PipelineLayout &operator=(PipelineLayout &&) = delete;
 
-	VkPipelineLayout get_handle() const;
+	vk::PipelineLayout get_handle() const;
 
 	const std::vector<ShaderModule *> &get_shader_modules() const;
 
-	const std::vector<ShaderResource> get_resources(const ShaderResourceType &type = ShaderResourceType::All, VkShaderStageFlagBits stage = VK_SHADER_STAGE_ALL) const;
+	const std::vector<ShaderResource> get_resources(const ShaderResourceType &type = ShaderResourceType::All, const vk::ShaderStageFlags& stages = ~vk::ShaderStageFlags()) const;
 
 	const std::unordered_map<uint32_t, std::vector<ShaderResource>> &get_shader_sets() const;
 
@@ -55,12 +55,10 @@ class PipelineLayout
 
 	DescriptorSetLayout &get_descriptor_set_layout(uint32_t set_index) const;
 
-	VkShaderStageFlags get_push_constant_range_stage(uint32_t offset, uint32_t size) const;
+	vk::ShaderStageFlags get_push_constant_range_stage(uint32_t offset, uint32_t size) const;
 
   private:
 	Device &device;
-
-	VkPipelineLayout handle{VK_NULL_HANDLE};
 
 	// The shader modules that this pipeline layout uses
 	std::vector<ShaderModule *> shader_modules;

@@ -48,6 +48,7 @@ target_sources(vulkan INTERFACE ${VULKAN_INCLUDE_DIR}/vulkan/vulkan.h)
 target_include_directories(vulkan INTERFACE ${VULKAN_INCLUDE_DIR})
 
 target_compile_definitions(vulkan INTERFACE VK_NO_PROTOTYPES)
+target_compile_definitions(vulkan INTERFACE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 
 
 if(ANDROID)

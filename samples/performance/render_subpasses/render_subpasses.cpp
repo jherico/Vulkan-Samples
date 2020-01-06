@@ -64,21 +64,21 @@ std::unique_ptr<vkb::RenderTarget> RenderSubpasses::create_render_target(vkb::co
 
 	vkb::core::Image depth_image{device,
 	                             extent,
-	                             vkb::get_suitable_depth_format(swapchain_image.get_device().get_physical_device()),
-	                             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | rt_usage_flags,
-	                             VMA_MEMORY_USAGE_GPU_ONLY};
+	                             vkb::get_supported_depth_format(swapchain_image.get_device().get_physical_device()),
+	                             vk::ImageUsageFlagBits::eDepthStencilAttachment | rt_usage_flags,
+	                             vma::MemoryUsage::eGpuOnly};
 
 	vkb::core::Image albedo_image{device,
 	                              extent,
 	                              albedo_format,
-	                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | rt_usage_flags,
-	                              VMA_MEMORY_USAGE_GPU_ONLY};
+	                              vk::ImageUsageFlagBits::eColorAttachment | rt_usage_flags,
+	                              vma::MemoryUsage::eGpuOnly};
 
 	vkb::core::Image normal_image{device,
 	                              extent,
 	                              normal_format,
-	                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | rt_usage_flags,
-	                              VMA_MEMORY_USAGE_GPU_ONLY};
+	                              vk::ImageUsageFlagBits::eColorAttachment | rt_usage_flags,
+	                              vma::MemoryUsage::eGpuOnly};
 
 	std::vector<vkb::core::Image> images;
 
@@ -109,7 +109,7 @@ bool RenderSubpasses::prepare(vkb::Platform &platform)
 		return false;
 	}
 
-	std::set<VkImageUsageFlagBits> usage = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT};
+	std::set<vk::ImageUsageFlagBits> usage = {vk::ImageUsageFlagBits::eColorAttachment, vk::ImageUsageFlagBits::eInputAttachment};
 	get_render_context().update_swapchain(usage);
 
 	load_scene("scenes/sponza/Sponza01.gltf");
@@ -189,12 +189,12 @@ void RenderSubpasses::update(float delta_time)
 		// If attachment option has changed
 		if (configs[Config::TransientAttachments].value != last_transient_attachment)
 		{
-			rt_usage_flags = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+			rt_usage_flags = vk::ImageUsageFlagBits::eInputAttachment;
 
 			// If attachment should be transient
 			if (configs[Config::TransientAttachments].value == 0)
 			{
-				rt_usage_flags |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+				rt_usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 			}
 			else
 			{
@@ -209,14 +209,14 @@ void RenderSubpasses::update(float delta_time)
 			if (configs[Config::GBufferSize].value == 0)
 			{
 				// Use less bits
-				albedo_format = VK_FORMAT_R8G8B8A8_UNORM;                  // 32-bit
-				normal_format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;        // 32-bit
+				albedo_format = vk::Format::eR8G8B8A8Unorm;                 // 32-bit
+				normal_format = vk::Format::eA2B10G10R10UnormPack32;        // 32-bit
 			}
 			else
 			{
 				// Use more bits
-				albedo_format = VK_FORMAT_R16G16B16A16_SFLOAT;        // 64-bit
-				normal_format = VK_FORMAT_R16G16B16A16_SFLOAT;        // 64-bit
+				albedo_format = vk::Format::eR16G16B16A16Sfloat;        // 64-bit
+				normal_format = vk::Format::eR16G16B16A16Sfloat;        // 64-bit
 			}
 
 			last_g_buffer_size = configs[Config::GBufferSize].value;
@@ -361,14 +361,14 @@ void draw_pipeline(vkb::CommandBuffer &command_buffer, vkb::RenderTarget &render
 {
 	auto &extent = render_target.get_extent();
 
-	VkViewport viewport{};
+	vk::Viewport viewport;
 	viewport.width    = static_cast<float>(extent.width);
 	viewport.height   = static_cast<float>(extent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	command_buffer.set_viewport(0, {viewport});
 
-	VkRect2D scissor{};
+	vk::Rect2D scissor;
 	scissor.extent = extent;
 	command_buffer.set_scissor(0, {scissor});
 
@@ -397,29 +397,28 @@ void RenderSubpasses::draw_renderpasses(vkb::CommandBuffer &command_buffer, vkb:
 	{
 		auto &view = render_target.get_views().at(i);
 
-		vkb::ImageMemoryBarrier barrier;
-
-		if (i == 1)
+		auto subresource_range = view.get_subresource_range();
+		if (subresource_range.aspectMask & vk::ImageAspectFlagBits::eDepth)
 		{
-			barrier.old_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			barrier.new_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-
-			barrier.src_stage_mask  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			barrier.src_access_mask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			vkb::insert_image_memory_barrier(
+			    command_buffer,
+			    view.get_image().get_handle(),
+			    vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eInputAttachmentRead,
+			    vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+			    vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
+			    vk::PipelineStageFlagBits::eFragmentShader,
+			    view.get_subresource_range());
 		}
 		else
 		{
-			barrier.old_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			barrier.new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-			barrier.src_stage_mask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			barrier.src_access_mask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            vkb::insert_image_memory_barrier(
+                command_buffer,
+                view.get_image().get_handle(),
+                vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eInputAttachmentRead,
+                vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+                view.get_subresource_range());
 		}
-
-		barrier.dst_stage_mask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		barrier.dst_access_mask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-
-		command_buffer.image_memory_barrier(view, barrier);
 	}
 
 	// Second render pass
