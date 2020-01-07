@@ -231,6 +231,16 @@ void HelloTriangle::init_instance(Context &                        context,
 	app.apiVersion       = VK_MAKE_VERSION(1, 0, 0);
 
 	VkInstanceCreateInfo instance_info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
+
+#if defined(VKB_DEBUG) || defined(VKB_VALIDATION_LAYERS)
+	VkDebugReportCallbackCreateInfoEXT info{VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT};
+
+	info.flags       = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+	info.pfnCallback = debug_callback;
+
+	instance_info.pNext = &info;
+#endif
+
 	instance_info.pApplicationInfo        = &app;
 	instance_info.enabledExtensionCount   = vkb::to_u32(active_instance_extensions.size());
 	instance_info.ppEnabledExtensionNames = active_instance_extensions.data();

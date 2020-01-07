@@ -222,6 +222,15 @@ Instance::Instance(const std::string &              application_name,
 
 	VkInstanceCreateInfo instance_info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
 
+#if defined(VKB_DEBUG) || defined(VKB_VALIDATION_LAYERS)
+	VkDebugReportCallbackCreateInfoEXT debug_report_info = {VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT};
+
+	debug_report_info.flags       = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+	debug_report_info.pfnCallback = debug_callback;
+
+	instance_info.pNext = &debug_report_info;
+#endif
+
 	instance_info.pApplicationInfo = &app_info;
 
 	instance_info.enabledExtensionCount   = to_u32(extensions.size());
