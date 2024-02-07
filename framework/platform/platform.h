@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -27,8 +27,8 @@
 #include "common/optional.h"
 #include "common/utils.h"
 #include "common/vk_common.h"
-#include "platform/application.h"
 #include "filesystem/legacy.h"
+#include "platform/application.h"
 #include "platform/parser.h"
 #include "platform/plugins/plugin.h"
 #include "platform/window.h"

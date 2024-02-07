@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -29,9 +29,9 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "common/logging.h"
+#include "filesystem/legacy.h"
 #include "force_close/force_close.h"
 #include "hpp_vulkan_sample.h"
-#include "filesystem/legacy.h"
 #include "platform/parsers/CLI11.h"
 #include "platform/plugins/plugin.h"
 #include "vulkan_sample.h"

@@ -1,5 +1,5 @@
-/* Copyright (c) 2018-2023, Arm Limited and Contributors
- * Copyright (c) 2019-2023, Sascha Willems
+/* Copyright (c) 2018-2024, Arm Limited and Contributors
+ * Copyright (c) 2019-2024, Sascha Willems
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -38,8 +38,8 @@ VKBP_ENABLE_WARNINGS()
 #include "core/pipeline.h"
 #include "core/pipeline_layout.h"
 #include "core/shader_module.h"
-#include "imgui_internal.h"
 #include "filesystem/legacy.h"
+#include "imgui_internal.h"
 #include "platform/window.h"
 #include "rendering/render_context.h"
 #include "timer.h"

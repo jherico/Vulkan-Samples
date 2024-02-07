@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
+/* Copyright (c) 2023-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -16,9 +16,9 @@
  */
 
 #include "mobile_nerf.h"
+#include "filesystem/legacy.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "gltf_loader.h"
-#include "filesystem/legacy.h"
 #include "platform/platform.h"
 #include "rendering/subpasses/forward_subpass.h"
 #include "scene_graph/components/material.h"
