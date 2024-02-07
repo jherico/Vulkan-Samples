@@ -23,7 +23,7 @@
 #include "core/hpp_image_view.h"
 #include "core/hpp_pipeline_layout.h"
 #include "debug_info.h"
-#include "platform/filesystem.h"
+#include "filesystem/legacy.h"
 #include "platform/input_events.h"
 #include "stats/hpp_stats.h"
 
