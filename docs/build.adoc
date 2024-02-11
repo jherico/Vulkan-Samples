@@ -139,7 +139,7 @@ ____
 
 === Dependencies
 
-* CMake v3.12+
+* CMake v3.19+
 * Python 3
 * Visual Studio 2017 or above
 * <<cmake-options,CMake Options>>
