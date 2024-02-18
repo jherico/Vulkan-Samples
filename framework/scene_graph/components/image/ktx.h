@@ -26,7 +26,8 @@ namespace sg
 class Ktx : public Image
 {
   public:
-	Ktx(const std::string &name, const std::vector<uint8_t> &data, ContentType content_type);
+	[[deprecated]] Ktx(const std::string &name, const std::vector<uint8_t> &data, ContentType content_type);
+	Ktx(const std::string &name, const uint8_t *data, size_t size, ContentType content_type);
 
 	virtual ~Ktx() = default;
 };

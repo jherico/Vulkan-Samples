@@ -16,7 +16,7 @@
  */
 
 #include "std_filesystem.hpp"
-
+#include "memory_mapped_file.hpp"
 #include <core/util/logging.hpp>
 
 #include <filesystem>
@@ -148,6 +148,13 @@ const Path &StdFileSystem::external_storage_directory() const
 const Path &StdFileSystem::temp_directory() const
 {
 	return _temp_directory;
+}
+
+
+void StdFileSystem::with_file_contents(const Path &path, const std::function<void(const uint8_t *, size_t)> &handler)
+{
+	MemoryMappedFile mapped_file(path);
+	handler(mapped_file.data(), mapped_file.size());
 }
 
 }        // namespace filesystem

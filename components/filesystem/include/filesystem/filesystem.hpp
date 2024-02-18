@@ -36,8 +36,8 @@ struct FileStat
 	size_t size;
 };
 
-using Path = std::filesystem::path;
-
+using Path            = std::filesystem::path;
+using ContentsHandler = std::function<void(const uint8_t *, size_t)>;
 // A thin filesystem wrapper
 class FileSystem
 {
@@ -53,6 +53,7 @@ class FileSystem
 	virtual std::vector<uint8_t> read_chunk(const Path &path, size_t start, size_t offset)      = 0;
 	virtual void                 write_file(const Path &path, const std::vector<uint8_t> &data) = 0;
 	virtual void                 remove(const Path &path)                                       = 0;
+	virtual void                 with_file_contents(const Path &path, const ContentsHandler &f) = 0;
 
 	virtual const Path &external_storage_directory() const = 0;
 	virtual const Path &temp_directory() const             = 0;

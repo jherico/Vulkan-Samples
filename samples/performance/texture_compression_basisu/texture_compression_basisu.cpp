@@ -20,6 +20,7 @@
  */
 
 #include "texture_compression_basisu.h"
+#include "common/ktx_common.h"
 
 TextureCompressionBasisu::TextureCompressionBasisu()
 {
@@ -131,20 +132,14 @@ void TextureCompressionBasisu::transcode_texture(const std::string &input_file, 
 	std::string file_name = vkb::fs::path::get(vkb::fs::path::Assets, "textures/basisu/" + input_file);
 
 	// We are working with KTX2.0 files, so we need to use the ktxTexture2 class
-	ktxTexture2 *ktx_texture;
-	// Load the KTX2.0 file into memory. This is agnostic to the KTX version, so we cast the ktxTexture2 down to ktxTexture
-	KTX_error_code result = ktxTexture_CreateFromNamedFile(file_name.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, reinterpret_cast<ktxTexture **>(&ktx_texture));
-	if (result != KTX_SUCCESS)
-	{
-		throw std::runtime_error("Could not load the requested image file.");
-	}
+	ktxTexture2 *ktx_texture = reinterpret_cast<ktxTexture2 *>(vkb::ktx::load_texture(file_name));
 
 	// Check if the texture needs transcoding. This is the case, if the format stored in the KTX file is a non-native compression format
 	// This is the case for all textures used in this sample, as they are compressed using Basis Universal, which has to be transcoded to a native GPU format
 	if (ktxTexture2_NeedsTranscoding(ktx_texture))
 	{
 		auto tStart         = std::chrono::high_resolution_clock::now();
-		result              = ktxTexture2_TranscodeBasis(ktx_texture, target_format, 0);
+		auto result         = ktxTexture2_TranscodeBasis(ktx_texture, target_format, 0);
 		last_transcode_time = std::chrono::duration<float, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
 		if (result != KTX_SUCCESS)
 		{

@@ -35,7 +35,7 @@ VKBP_ENABLE_WARNINGS()
 #include "common/vk_common.h"
 #include "core/device.h"
 #include "core/image.h"
-#include "filesystem/legacy.h"
+#include "filesystem/filesystem.hpp"
 #include "scene_graph/components/camera.h"
 #include "scene_graph/components/image.h"
 #include "scene_graph/components/image/astc.h"
@@ -408,16 +408,22 @@ std::unique_ptr<sg::Scene> GLTFLoader::read_scene_from_file(const std::string &f
 {
 	std::string err;
 	std::string warn;
+	bool        importResult = false;
 
 	tinygltf::TinyGLTF gltf_loader;
 
-	std::string gltf_file = vkb::fs::path::get(vkb::fs::path::Type::Assets) + file_name;
-
-	bool importResult = gltf_loader.LoadASCIIFromFile(&model, &err, &warn, gltf_file.c_str());
+	vkb::filesystem::Path gltf_file     = vkb::fs::path::get(vkb::fs::path::Type::Assets) + file_name;
+	const auto            filesystemPtr = vkb::filesystem::get();
+	const auto           &filesystem    = *filesystemPtr;
+	vkb::filesystem::get()->with_file_contents(gltf_file, [&](const uint8_t *data, size_t size) {
+		auto parent_path = gltf_file.parent_path().string();
+		auto char_data   = reinterpret_cast<const char *>(data);
+		importResult     = gltf_loader.LoadASCIIFromString(&model, &err, &warn, char_data, static_cast<unsigned int>(size), parent_path);
+	});
 
 	if (!importResult)
 	{
-		LOGE("Failed to load gltf file {}.", gltf_file.c_str());
+		LOGE("Failed to load gltf file {}.", gltf_file.string().c_str());
 
 		return nullptr;
 	}
@@ -450,16 +456,23 @@ std::unique_ptr<sg::SubMesh> GLTFLoader::read_model_from_file(const std::string 
 {
 	std::string err;
 	std::string warn;
+	bool        importResult;
 
 	tinygltf::TinyGLTF gltf_loader;
 
-	std::string gltf_file = vkb::fs::path::get(vkb::fs::path::Type::Assets) + file_name;
+	vkb::filesystem::Path gltf_file     = vkb::fs::path::get(vkb::fs::path::Type::Assets) + file_name;
+	const auto            filesystemPtr = vkb::filesystem::get();
+	const auto           &filesystem    = *filesystemPtr;
 
-	bool importResult = gltf_loader.LoadASCIIFromFile(&model, &err, &warn, gltf_file.c_str());
+	vkb::filesystem::get()->with_file_contents(gltf_file, [&](const uint8_t *data, size_t size) {
+		auto parent_path = gltf_file.parent_path().string();
+		auto char_data   = reinterpret_cast<const char *>(data);
+		importResult     = gltf_loader.LoadASCIIFromString(&model, &err, &warn, char_data, static_cast<unsigned int>(size), parent_path);
+	});
 
 	if (!importResult)
 	{
-		LOGE("Failed to load gltf file {}.", gltf_file.c_str());
+		LOGE("Failed to load gltf file {}.", gltf_file.string().c_str());
 
 		return nullptr;
 	}

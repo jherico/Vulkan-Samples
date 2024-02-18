@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
 #include "filesystem/filesystem.hpp"
 
@@ -23,6 +24,7 @@ namespace vkb
 {
 namespace filesystem
 {
+
 class StdFileSystem final : public FileSystem
 {
   public:
@@ -44,6 +46,8 @@ class StdFileSystem final : public FileSystem
 	bool create_directory(const Path &path) override;
 
 	std::vector<uint8_t> read_chunk(const Path &path, size_t start, size_t offset) override;
+
+	void with_file_contents(const Path &path, const ContentsHandler &handler) override;
 
 	void write_file(const Path &path, const std::vector<uint8_t> &data) override;
 

@@ -45,7 +45,8 @@ class Astc : public Image
 	 * @param name Name of the component
 	 * @param data ASTC data with header
 	 */
-	Astc(const std::string &name, const std::vector<uint8_t> &data);
+	[[deprecated]] Astc(const std::string &name, const std::vector<uint8_t> &data);
+	Astc(const std::string &name, const uint8_t* data, size_t size);
 
 	virtual ~Astc() = default;
 

@@ -26,7 +26,8 @@ namespace sg
 class Stb : public Image
 {
   public:
-	Stb(const std::string &name, const std::vector<uint8_t> &data, ContentType content_type);
+	[[deprecated]] Stb(const std::string &name, const std::vector<uint8_t> &data, ContentType content_type);
+	Stb(const std::string &name, const uint8_t *data, size_t size, ContentType content_type);
 
 	virtual ~Stb() = default;
 };

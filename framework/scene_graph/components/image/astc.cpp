@@ -194,17 +194,21 @@ Astc::Astc(const Image &image) :
 }
 
 Astc::Astc(const std::string &name, const std::vector<uint8_t> &data) :
+    Astc{name, data.data(), data.size()}
+{}
+
+Astc::Astc(const std::string &name, const uint8_t *data, size_t size) :
     Image{name}
 {
 	init();
 
 	// Read header
-	if (data.size() < sizeof(AstcHeader))
+	if (size < sizeof(AstcHeader))
 	{
 		throw std::runtime_error{"Error reading astc: invalid memory"};
 	}
 	AstcHeader header{};
-	std::memcpy(&header, data.data(), sizeof(AstcHeader));
+	std::memcpy(&header, data, sizeof(AstcHeader));
 	uint32_t magicval = header.magic[0] + 256 * static_cast<uint32_t>(header.magic[1]) + 65536 * static_cast<uint32_t>(header.magic[2]) + 16777216 * static_cast<uint32_t>(header.magic[3]);
 	if (magicval != MAGIC_FILE_CONSTANT)
 	{
@@ -221,7 +225,7 @@ Astc::Astc(const std::string &name, const std::vector<uint8_t> &data) :
 	    /* height = */ static_cast<uint32_t>(header.ysize[0] + 256 * header.ysize[1] + 65536 * header.ysize[2]),
 	    /* depth  = */ static_cast<uint32_t>(header.zsize[0] + 256 * header.zsize[1] + 65536 * header.zsize[2])};
 
-	decode(blockdim, extent, data.data() + sizeof(AstcHeader));
+	decode(blockdim, extent, data + sizeof(AstcHeader));
 }
 
 }        // namespace sg

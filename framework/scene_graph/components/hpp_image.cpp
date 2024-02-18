@@ -18,7 +18,7 @@
 #include "hpp_image.h"
 
 #include "common/hpp_utils.h"
-#include "filesystem/legacy.h"
+#include "filesystem/filesystem.hpp"
 #include "scene_graph/components/image/astc.h"
 #include "scene_graph/components/image/ktx.h"
 #include "scene_graph/components/image/stb.h"
@@ -49,27 +49,27 @@ std::unique_ptr<vkb::scene_graph::components::HPPImage> HPPImage::load(const std
 {
 	std::unique_ptr<vkb::scene_graph::components::HPPImage> image{nullptr};
 
-	auto data = fs::read_asset(uri);
-
 	// Get extension
 	auto extension = get_extension(uri);
 
 	// the derived classes Stb, Astc, and Ktx are not transcoded (yet), so we need some more complex casting here...
-	if (extension == "png" || extension == "jpg")
-	{
-		image = std::unique_ptr<vkb::scene_graph::components::HPPImage>(reinterpret_cast<vkb::scene_graph::components::HPPImage *>(
-		    std::make_unique<vkb::sg::Stb>(name, data, static_cast<vkb::sg::Image::ContentType>(content_type)).release()));
-	}
-	else if (extension == "astc")
-	{
-		image = std::unique_ptr<vkb::scene_graph::components::HPPImage>(
-		    reinterpret_cast<vkb::scene_graph::components::HPPImage *>(std::make_unique<vkb::sg::Astc>(name, data).release()));
-	}
-	else if ((extension == "ktx") || (extension == "ktx2"))
-	{
-		image = std::unique_ptr<vkb::scene_graph::components::HPPImage>(reinterpret_cast<vkb::scene_graph::components::HPPImage *>(
-		    std::make_unique<vkb::sg::Ktx>(name, data, static_cast<vkb::sg::Image::ContentType>(content_type)).release()));
-	}
+	filesystem::get()->with_file_contents("assets/" + uri, [&](const uint8_t *data, size_t size) {
+		if (extension == "png" || extension == "jpg")
+		{
+			image = std::unique_ptr<vkb::scene_graph::components::HPPImage>(reinterpret_cast<vkb::scene_graph::components::HPPImage *>(
+			    std::make_unique<vkb::sg::Stb>(name, data, size, static_cast<vkb::sg::Image::ContentType>(content_type)).release()));
+		}
+		else if (extension == "astc")
+		{
+			image = std::unique_ptr<vkb::scene_graph::components::HPPImage>(
+			    reinterpret_cast<vkb::scene_graph::components::HPPImage *>(std::make_unique<vkb::sg::Astc>(name, data, size).release()));
+		}
+		else if ((extension == "ktx") || (extension == "ktx2"))
+		{
+			image = std::unique_ptr<vkb::scene_graph::components::HPPImage>(reinterpret_cast<vkb::scene_graph::components::HPPImage *>(
+			    std::make_unique<vkb::sg::Ktx>(name, data, size, static_cast<vkb::sg::Image::ContentType>(content_type)).release()));
+		}
+	});
 
 	return image;
 }

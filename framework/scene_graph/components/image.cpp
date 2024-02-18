@@ -27,7 +27,7 @@ VKBP_DISABLE_WARNINGS()
 VKBP_ENABLE_WARNINGS()
 
 #include "common/utils.h"
-#include "filesystem/legacy.h"
+#include "filesystem/filesystem.hpp"
 #include "scene_graph/components/image/astc.h"
 #include "scene_graph/components/image/ktx.h"
 #include "scene_graph/components/image/stb.h"
@@ -341,28 +341,23 @@ std::unique_ptr<Image> Image::load(const std::string &name, const std::string &u
 {
 	std::unique_ptr<Image> image{nullptr};
 
-	auto data = fs::read_asset(uri);
-
 	// Get extension
 	auto extension = get_extension(uri);
 
-	if (extension == "png" || extension == "jpg")
-	{
-		image = std::make_unique<Stb>(name, data, content_type);
-	}
-	else if (extension == "astc")
-	{
-		image = std::make_unique<Astc>(name, data);
-	}
-	else if (extension == "ktx")
-	{
-		image = std::make_unique<Ktx>(name, data, content_type);
-	}
-	else if (extension == "ktx2")
-	{
-		image = std::make_unique<Ktx>(name, data, content_type);
-	}
-
+	filesystem::get()->with_file_contents("assets/" +  uri, [&](const uint8_t *data, size_t size) {
+		if (extension == "png" || extension == "jpg")
+		{
+			image = std::make_unique<Stb>(name, data, size, content_type);
+		}
+		else if (extension == "astc")
+		{
+			image = std::make_unique<Astc>(name, data, size);
+		}
+		else if (extension == "ktx" || extension == "ktx2")
+		{
+			image = std::make_unique<Ktx>(name, data, size, content_type);
+		}
+	});
 	return image;
 }
 

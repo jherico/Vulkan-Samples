@@ -24,7 +24,12 @@ namespace vkb
 {
 namespace sg
 {
+
 Stb::Stb(const std::string &name, const std::vector<uint8_t> &data, ContentType content_type) :
+    Stb{name, data.data(), data.size(), content_type}
+{}
+
+Stb::Stb(const std::string &name, const uint8_t *data, size_t size, ContentType content_type) :
     Image{name}
 {
 	int width;
@@ -32,10 +37,10 @@ Stb::Stb(const std::string &name, const std::vector<uint8_t> &data, ContentType 
 	int comp;
 	int req_comp = 4;
 
-	auto data_buffer = reinterpret_cast<const stbi_uc *>(data.data());
-	auto data_size   = static_cast<int>(data.size());
+	auto &data_buffer = data;
+	auto &data_size   = size;
 
-	auto raw_data = stbi_load_from_memory(data_buffer, data_size, &width, &height, &comp, req_comp);
+	auto raw_data = stbi_load_from_memory(data_buffer, static_cast<int>(data_size), &width, &height, &comp, req_comp);
 
 	if (!raw_data)
 	{

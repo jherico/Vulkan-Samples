@@ -20,6 +20,7 @@
  */
 
 #include "texture_mipmap_generation.h"
+#include "common/ktx_common.h"
 
 TextureMipMapGeneration::TextureMipMapGeneration()
 {
@@ -62,16 +63,9 @@ void TextureMipMapGeneration::load_texture_generate_mipmaps(std::string file_nam
 	// ktx1 doesn't know whether the content is sRGB or linear, but most tools save in sRGB, so assume that.
 	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 
-	ktxTexture    *ktx_texture;
-	KTX_error_code result;
-
-	result = ktxTexture_CreateFromNamedFile(file_name.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktx_texture);
 	// @todo: get format from libktx
+	ktxTexture    *ktx_texture = vkb::ktx::load_texture(file_name);
 
-	if (ktx_texture == nullptr)
-	{
-		throw std::runtime_error("Couldn't load texture");
-	}
 	texture.width  = ktx_texture->baseWidth;
 	texture.height = ktx_texture->baseHeight;
 	// Calculate number of mip levels as per Vulkan specs:

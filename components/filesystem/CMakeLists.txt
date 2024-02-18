@@ -21,10 +21,12 @@ vkb__register_component(
         include/filesystem/legacy.h
         # private
         src/std_filesystem.hpp
+        src/memory_mapped_file.hpp
     SRC
         src/legacy.cpp
         src/filesystem.cpp
         src/std_filesystem.cpp
+        src/memory_mapped_file.cpp
     LINK_LIBS
         vkb__core
         stb
