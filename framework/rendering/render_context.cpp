@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -102,7 +102,7 @@ VkFormat RenderContext::get_format() const
 	return format;
 }
 
-void RenderContext::update_swapchain(const VkExtent2D &extent)
+void RenderContext::update_swapchain_extent(const VkExtent2D &extent)
 {
 	if (!swapchain)
 	{
@@ -117,7 +117,7 @@ void RenderContext::update_swapchain(const VkExtent2D &extent)
 	recreate();
 }
 
-void RenderContext::update_swapchain(const uint32_t image_count)
+void RenderContext::update_swapchain_image_count(const uint32_t image_count)
 {
 	if (!swapchain)
 	{
@@ -134,7 +134,7 @@ void RenderContext::update_swapchain(const uint32_t image_count)
 	recreate();
 }
 
-void RenderContext::update_swapchain(const std::set<VkImageUsageFlagBits> &image_usage_flags)
+void RenderContext::update_swapchain_image_usage(const VkImageUsageFlags &image_usage_flags)
 {
 	if (!swapchain)
 	{
@@ -144,12 +144,12 @@ void RenderContext::update_swapchain(const std::set<VkImageUsageFlagBits> &image
 
 	device.get_resource_cache().clear_framebuffers();
 
-	swapchain = std::make_unique<Swapchain>(*swapchain, image_usage_flags);
+	swapchain = std::make_unique<Swapchain>(*swapchain, image_usage_flags, true);
 
 	recreate();
 }
 
-void RenderContext::update_swapchain(const VkExtent2D &extent, const VkSurfaceTransformFlagBitsKHR transform)
+void RenderContext::update_swapchain_transform(const VkExtent2D &extent, const VkSurfaceTransformFlagBitsKHR transform)
 {
 	if (!swapchain)
 	{
@@ -237,7 +237,7 @@ bool RenderContext::handle_surface_changes(bool force_update)
 		// Recreate swapchain
 		device.wait_idle();
 
-		update_swapchain(surface_properties.currentExtent, pre_transform);
+		update_swapchain_transform(surface_properties.currentExtent, pre_transform);
 
 		surface_extent = surface_properties.currentExtent;
 

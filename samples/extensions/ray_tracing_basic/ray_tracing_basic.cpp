@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Sascha Willems
+/* Copyright (c) 2019-2024, Sascha Willems
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -825,8 +825,9 @@ bool RaytracingBasic::prepare(const vkb::ApplicationOptions &options)
 	}
 
 	// This sample copies the ray traced output to the swap chain image, so we need to enable the required image usage flags
-	const std::set<VkImageUsageFlagBits> image_usage_flags = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT};
-	update_swapchain_image_usage_flags(image_usage_flags);
+	update_swapchain_image_usage_flags(
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+	    VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	// This sample renders the UI overlay on top of the ray tracing output, so we need to disable color attachment clears
 	update_render_pass_flags(RenderPassCreateFlags::ColorAttachmentLoad);

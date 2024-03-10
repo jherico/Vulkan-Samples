@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -109,8 +109,9 @@ bool Subpasses::prepare(const vkb::ApplicationOptions &options)
 		return false;
 	}
 
-	std::set<VkImageUsageFlagBits> usage = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT};
-	get_render_context().update_swapchain(usage);
+	get_render_context().update_swapchain_image_usage(
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+	    VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
 
 	load_scene("scenes/sponza/Sponza01.gltf");
 

@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2021-2023, NVIDIA CORPORATION.  All rights reserved.
+/* Copyright (c) 2021-2024-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -954,8 +953,9 @@ bool RaytracingReflection::prepare(const vkb::ApplicationOptions &options)
 	}
 
 	// This sample copies the ray traced output to the swap chain image, so we need to enable the required image usage flags
-	const std::set<VkImageUsageFlagBits> image_usage_flags = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT};
-	update_swapchain_image_usage_flags(image_usage_flags);
+	update_swapchain_image_usage_flags(
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+	    VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	// This sample renders the UI overlay on top of the ray tracing output, so we need to disable color attachment clears
 	update_render_pass_flags(RenderPassCreateFlags::ColorAttachmentLoad);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -99,26 +99,26 @@ class RenderContext
 	 * @brief Updates the swapchains extent, if a swapchain exists
 	 * @param extent The width and height of the new swapchain images
 	 */
-	void update_swapchain(const VkExtent2D &extent);
+	void update_swapchain_extent(const VkExtent2D &extent);
 
 	/**
 	 * @brief Updates the swapchains image count, if a swapchain exists
 	 * @param image_count The amount of images in the new swapchain
 	 */
-	void update_swapchain(const uint32_t image_count);
+	void update_swapchain_image_count(const uint32_t image_count);
 
 	/**
 	 * @brief Updates the swapchains image usage, if a swapchain exists
 	 * @param image_usage_flags The usage flags the new swapchain images will have
 	 */
-	void update_swapchain(const std::set<VkImageUsageFlagBits> &image_usage_flags);
+	void update_swapchain_image_usage(const VkImageUsageFlags &image_usage_flags);
 
 	/**
 	 * @brief Updates the swapchains extent and surface transform, if a swapchain exists
 	 * @param extent The width and height of the new swapchain images
 	 * @param transform The surface transform flags
 	 */
-	void update_swapchain(const VkExtent2D &extent, const VkSurfaceTransformFlagBitsKHR transform);
+	void update_swapchain_transform(const VkExtent2D &extent, const VkSurfaceTransformFlagBitsKHR transform);
 
 	/**
 	 * @returns True if a valid swapchain exists in the RenderContext
@@ -237,8 +237,6 @@ class RenderContext
 	const Queue &queue;
 
 	std::unique_ptr<Swapchain> swapchain;
-
-	SwapchainProperties swapchain_properties;
 
 	std::vector<std::unique_ptr<RenderFrame>> frames;
 

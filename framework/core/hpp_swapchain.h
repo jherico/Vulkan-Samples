@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2023, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2021-2024, NVIDIA CORPORATION. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <set>
 #include <vulkan/vulkan.hpp>
 
 namespace vkb
@@ -46,25 +45,25 @@ class HPPSwapchain
 	 * @brief Constructor to create a swapchain by changing the extent
 	 *        only and preserving the configuration from the old swapchain.
 	 */
-	HPPSwapchain(HPPSwapchain &old_swapchain, const vk::Extent2D &extent);
+	HPPSwapchain(const HPPSwapchain &old_swapchain, const vk::Extent2D &extent);
 
 	/**
 	 * @brief Constructor to create a swapchain by changing the image count
 	 *        only and preserving the configuration from the old swapchain.
 	 */
-	HPPSwapchain(HPPSwapchain &old_swapchain, const uint32_t image_count);
+	HPPSwapchain(const HPPSwapchain &old_swapchain, const uint32_t image_count);
 
 	/**
 	 * @brief Constructor to create a swapchain by changing the image usage
 	 * only and preserving the configuration from the old swapchain.
 	 */
-	HPPSwapchain(HPPSwapchain &old_swapchain, const std::set<vk::ImageUsageFlagBits> &image_usage_flags);
+	HPPSwapchain(const HPPSwapchain &old_swapchain, const vk::ImageUsageFlags &image_usage_flags);
 
 	/**
 	 * @brief Constructor to create a swapchain by changing the extent
 	 *        and transform only and preserving the configuration from the old swapchain.
 	 */
-	HPPSwapchain(HPPSwapchain &swapchain, const vk::Extent2D &extent, const vk::SurfaceTransformFlagBitsKHR transform);
+	HPPSwapchain(const HPPSwapchain &swapchain, const vk::Extent2D &extent, const vk::SurfaceTransformFlagBitsKHR transform);
 
 	/**
 	 * @brief Constructor to create a swapchain.
@@ -78,10 +77,7 @@ class HPPSwapchain
 	             const vk::Extent2D                      &extent                       = {},
 	             const uint32_t                           image_count                  = 3,
 	             const vk::SurfaceTransformFlagBitsKHR    transform                    = vk::SurfaceTransformFlagBitsKHR::eIdentity,
-	             const std::set<vk::ImageUsageFlagBits>  &image_usage_flags            = {vk::ImageUsageFlagBits::eColorAttachment, vk::ImageUsageFlagBits::eTransferSrc},
-	             vk::SwapchainKHR                         old_swapchain                = nullptr);
-
-	HPPSwapchain(const HPPSwapchain &) = delete;
+	             const vk::ImageUsageFlags               &image_usage_flags            = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc);
 
 	HPPSwapchain(HPPSwapchain &&other);
 
@@ -114,6 +110,10 @@ class HPPSwapchain
 	vk::PresentModeKHR get_present_mode() const;
 
   private:
+	HPPSwapchain(const HPPSwapchain &old_swapchain);
+
+	void init();
+
 	HPPDevice &device;
 
 	vk::SurfaceKHR surface;
@@ -122,10 +122,6 @@ class HPPSwapchain
 
 	std::vector<vk::Image> images;
 
-	std::vector<vk::SurfaceFormatKHR> surface_formats;
-
-	std::vector<vk::PresentModeKHR> present_modes;
-
 	HPPSwapchainProperties properties;
 
 	// A list of present modes in order of priority (vector[0] has high priority, vector[size-1] has low priority)
@@ -133,8 +129,6 @@ class HPPSwapchain
 
 	// A list of surface formats in order of priority (vector[0] has high priority, vector[size-1] has low priority)
 	std::vector<vk::SurfaceFormatKHR> surface_format_priority_list;
-
-	std::set<vk::ImageUsageFlagBits> image_usage_flags;
 };
 }        // namespace core
 }        // namespace vkb

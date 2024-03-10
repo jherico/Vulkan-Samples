@@ -1,4 +1,4 @@
-/* Copyright (c) 2020-2023, Arm Limited and Contributors
+/* Copyright (c) 2020-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -238,11 +238,9 @@ void KHR16BitStorageInputOutputSample::draw_gui()
 
 void KHR16BitStorageInputOutputSample::recreate_swapchain()
 {
-	std::set<VkImageUsageFlagBits> image_usage_flags = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT};
-
 	get_device().wait_idle();
 
-	get_render_context().update_swapchain(image_usage_flags);
+	get_render_context().update_swapchain_image_usage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 }
 
 std::unique_ptr<vkb::VulkanSample> create_16bit_storage_input_output()

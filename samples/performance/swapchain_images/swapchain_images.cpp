@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -72,7 +72,7 @@ void SwapchainImages::update(float delta_time)
 		get_device().wait_idle();
 
 		// Create a new swapchain with a new swapchain image count
-		render_context->update_swapchain(swapchain_image_count);
+		render_context->update_swapchain_image_count(swapchain_image_count);
 
 		last_swapchain_image_count = swapchain_image_count;
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -123,7 +123,7 @@ void HPPRenderContext::update_swapchain(const uint32_t image_count)
 	recreate();
 }
 
-void HPPRenderContext::update_swapchain(const std::set<vk::ImageUsageFlagBits> &image_usage_flags)
+void HPPRenderContext::update_swapchain(const vk::ImageUsageFlags &image_usage_flags)
 {
 	if (!swapchain)
 	{

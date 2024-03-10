@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2023, Arm Limited and Contributors
+/* Copyright (c) 2021-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -307,17 +307,17 @@ void MSAASample::update_pipelines()
 	}
 
 	// Default swapchain usage flags
-	std::set<VkImageUsageFlagBits> swapchain_usage = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT};
+	VkImageUsageFlags swapchain_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	if (ColorResolve::SeparatePass == color_resolve_method && !run_postprocessing)
 	{
 		// The multisampled color image will be resolved
 		// to the swapchain with a transfer operation
-		swapchain_usage.insert(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		swapchain_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
 
 	get_device().wait_idle();
 
-	get_render_context().update_swapchain(swapchain_usage);
+	get_render_context().update_swapchain_image_usage(swapchain_usage);
 }
 
 void MSAASample::update_for_scene_only(bool msaa_enabled)

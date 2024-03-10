@@ -1,4 +1,4 @@
-/* Copyright (c) 2021-2023 Holochip Corporation
+/* Copyright (c) 2021-2024 Holochip Corporation
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -1348,8 +1348,9 @@ bool RaytracingExtended::prepare(const vkb::ApplicationOptions &options)
 	}
 
 	// This sample copies the ray traced output to the swap chain image, so we need to enable the required image usage flags
-	std::set<VkImageUsageFlagBits> image_usage_flags = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT};
-	get_render_context().update_swapchain(image_usage_flags);
+	update_swapchain_image_usage_flags(
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+	    VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	// Get the ray tracing pipeline properties, which we'll need later on in the sample
 	ray_tracing_pipeline_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;

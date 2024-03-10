@@ -926,9 +926,9 @@ void ApiVulkanSample::create_swapchain_buffers()
 	}
 }
 
-void ApiVulkanSample::update_swapchain_image_usage_flags(std::set<VkImageUsageFlagBits> image_usage_flags)
+void ApiVulkanSample::update_swapchain_image_usage_flags(VkImageUsageFlags image_usage_flags)
 {
-	get_render_context().update_swapchain(image_usage_flags);
+	get_render_context().update_swapchain_image_usage(image_usage_flags);
 	create_swapchain_buffers();
 	setup_framebuffer();
 }

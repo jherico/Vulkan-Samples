@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -99,17 +99,17 @@ void AFBCSample::update(float delta_time)
 
 void AFBCSample::recreate_swapchain()
 {
-	std::set<VkImageUsageFlagBits> image_usage_flags = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT};
+	VkImageUsageFlags image_usage_flags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	if (!afbc_enabled)
 	{
 		// To force-disable AFBC, set an invalid image usage flag
-		image_usage_flags.insert(VK_IMAGE_USAGE_STORAGE_BIT);
+		image_usage_flags |= VK_IMAGE_USAGE_STORAGE_BIT;
 	}
 
 	get_device().wait_idle();
 
-	get_render_context().update_swapchain(image_usage_flags);
+	get_render_context().update_swapchain_image_usage(image_usage_flags);
 }
 
 void AFBCSample::draw_gui()

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "common/helpers.h"
-#include "common/vk_common.h"
+#include <vector>
+#include <vulkan/vulkan.h>
 
 namespace vkb
 {
@@ -50,25 +50,26 @@ class Swapchain
 	 * @brief Constructor to create a swapchain by changing the extent
 	 *        only and preserving the configuration from the old swapchain.
 	 */
-	Swapchain(Swapchain &old_swapchain, const VkExtent2D &extent);
+	Swapchain(const Swapchain &old_swapchain, const VkExtent2D &extent);
 
 	/**
 	 * @brief Constructor to create a swapchain by changing the image count
 	 *        only and preserving the configuration from the old swapchain.
 	 */
-	Swapchain(Swapchain &old_swapchain, const uint32_t image_count);
+	Swapchain(const Swapchain &old_swapchain, const uint32_t image_count);
 
 	/**
 	 * @brief Constructor to create a swapchain by changing the image usage
 	 * only and preserving the configuration from the old swapchain.
+	 * Extra boolean argument to differentiate between this and the `uint32_t image_count` constructor.
 	 */
-	Swapchain(Swapchain &old_swapchain, const std::set<VkImageUsageFlagBits> &image_usage_flags);
+	Swapchain(const Swapchain &old_swapchain, const VkImageUsageFlags &image_usage_flags, bool _);
 
 	/**
 	 * @brief Constructor to create a swapchain by changing the extent
 	 *        and transform only and preserving the configuration from the old swapchain.
 	 */
-	Swapchain(Swapchain &swapchain, const VkExtent2D &extent, const VkSurfaceTransformFlagBitsKHR transform);
+	Swapchain(const Swapchain &swapchain, const VkExtent2D &extent, const VkSurfaceTransformFlagBitsKHR transform);
 
 	/**
 	 * @brief Constructor to create a swapchain.
@@ -83,27 +84,10 @@ class Swapchain
 	          const VkExtent2D                      &extent                       = {},
 	          const uint32_t                         image_count                  = 3,
 	          const VkSurfaceTransformFlagBitsKHR    transform                    = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-	          const std::set<VkImageUsageFlagBits>  &image_usage_flags            = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT});
+	          const VkImageUsageFlags               &image_usage_flags            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+	          VkSwapchainKHR                         old_swapchain                = VK_NULL_HANDLE);
 
-	/**
-	 * @brief Constructor to create a swapchain from the old swapchain
-	 *        by configuring all parameters.
-	 */
-	Swapchain(Swapchain                             &old_swapchain,
-	          Device                                &device,
-	          VkSurfaceKHR                           surface,
-	          const VkPresentModeKHR                 present_mode,
-	          const std::vector<VkPresentModeKHR>   &present_mode_priority_list   = {VK_PRESENT_MODE_FIFO_KHR, VK_PRESENT_MODE_MAILBOX_KHR},
-	          const std::vector<VkSurfaceFormatKHR> &surface_format_priority_list = {{VK_FORMAT_R8G8B8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},
-	                                                                                 {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}},
-	          const VkExtent2D                      &extent                       = {},
-	          const uint32_t                         image_count                  = 3,
-	          const VkSurfaceTransformFlagBitsKHR    transform                    = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-	          const std::set<VkImageUsageFlagBits>  &image_usage_flags            = {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT});
-
-	Swapchain(const Swapchain &) = delete;
-
-	Swapchain(Swapchain &&other);
+	Swapchain(Swapchain &&other) noexcept;
 
 	~Swapchain();
 
@@ -134,6 +118,16 @@ class Swapchain
 	VkPresentModeKHR get_present_mode() const;
 
   private:
+	/*
+	 * Note that we are creating a special copy constructor for the Swapchain class that should
+	 * not be publicly visible.  It's purpose is to provide a helper function the various
+	 * specialized constructors that take an "old swapchain" as a parameter and are intended
+	 * to create a new swapchain.  For that reason, this constructor is unique in that it doesn't
+	 * call init(), which performs the actual swap chain creation.
+	 */
+	Swapchain(const Swapchain &old_swapchain);
+	void init();
+
 	Device &device;
 
 	VkSurfaceKHR surface{VK_NULL_HANDLE};
@@ -141,10 +135,6 @@ class Swapchain
 	VkSwapchainKHR handle{VK_NULL_HANDLE};
 
 	std::vector<VkImage> images;
-
-	std::vector<VkSurfaceFormatKHR> surface_formats{};
-
-	std::vector<VkPresentModeKHR> present_modes{};
 
 	SwapchainProperties properties;
 
@@ -157,7 +147,5 @@ class Swapchain
 	std::vector<VkSurfaceFormatKHR> surface_format_priority_list = {
 	    {VK_FORMAT_R8G8B8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},
 	    {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}};
-
-	std::set<VkImageUsageFlagBits> image_usage_flags;
 };
 }        // namespace vkb

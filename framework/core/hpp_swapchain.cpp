@@ -1,4 +1,4 @@
-/* Copyright (c) 2022-2023, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2022-2024, NVIDIA CORPORATION. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -56,10 +56,19 @@ vk::Extent2D choose_extent(vk::Extent2D        request_extent,
 	return request_extent;
 }
 
-vk::PresentModeKHR choose_present_mode(vk::PresentModeKHR                     request_present_mode,
-                                       const std::vector<vk::PresentModeKHR> &available_present_modes,
-                                       const std::vector<vk::PresentModeKHR> &present_mode_priority_list)
+vk::PresentModeKHR choose_present_mode(
+    const core::HPPDevice                 &device,
+    vk::SurfaceKHR                         surface,
+    vk::PresentModeKHR                     request_present_mode,
+    const std::vector<vk::PresentModeKHR> &present_mode_priority_list)
 {
+	auto available_present_modes = device.get_gpu().get_handle().getSurfacePresentModesKHR(surface);
+	LOGI("Surface supports the following present modes:");
+	for (auto &present_mode : available_present_modes)
+	{
+		LOGI("  \t{}", to_string(present_mode));
+	}
+
 	// Try to find the requested present mode in the available present modes
 	auto const present_mode_it = std::find(available_present_modes.begin(), available_present_modes.end(), request_present_mode);
 	if (present_mode_it == available_present_modes.end())
@@ -83,10 +92,19 @@ vk::PresentModeKHR choose_present_mode(vk::PresentModeKHR                     re
 	}
 }
 
-vk::SurfaceFormatKHR choose_surface_format(const vk::SurfaceFormatKHR               requested_surface_format,
-                                           const std::vector<vk::SurfaceFormatKHR> &available_surface_formats,
-                                           const std::vector<vk::SurfaceFormatKHR> &surface_format_priority_list)
+vk::SurfaceFormatKHR choose_surface_format(
+    const core::HPPDevice                   &device,
+    vk::SurfaceKHR                           surface,
+    const vk::SurfaceFormatKHR               requested_surface_format,
+    const std::vector<vk::SurfaceFormatKHR> &surface_format_priority_list)
 {
+	const auto available_surface_formats = device.get_gpu().get_handle().getSurfaceFormatsKHR(surface);
+	LOGI("Surface supports the following surface formats:");
+	for (auto &surface_format : available_surface_formats)
+	{
+		LOGI("  \t{}", vk::to_string(surface_format.format) + ", " + vk::to_string(surface_format.colorSpace));
+	}
+
 	// Try to find the requested surface format in the available surface formats
 	auto const surface_format_it = std::find(available_surface_formats.begin(), available_surface_formats.end(), requested_surface_format);
 
@@ -160,24 +178,45 @@ bool validate_format_feature(vk::ImageUsageFlagBits image_usage, vk::FormatFeatu
 	return (image_usage != vk::ImageUsageFlagBits::eStorage) || (supported_features & vk::FormatFeatureFlagBits::eStorageImage);
 }
 
-std::set<vk::ImageUsageFlagBits> choose_image_usage(const std::set<vk::ImageUsageFlagBits> &requested_image_usage_flags,
-                                                    vk::ImageUsageFlags                     supported_image_usage,
-                                                    vk::FormatFeatureFlags                  supported_features)
+template <typename BitType>
+void for_each_filtered_flag(const vk::Flags<BitType> &requested_flags, const std::function<void(BitType)> &f)
 {
-	std::set<vk::ImageUsageFlagBits> validated_image_usage_flags;
-	for (auto flag : requested_image_usage_flags)
+	using MaskType    = vk::Flags<BitType>::MaskType;
+	MaskType test_bit = 1;
+	while (test_bit != 0)
 	{
+		BitType m = static_cast<BitType>(test_bit);
+		if (requested_flags & m)
+		{
+			f(m);
+		}
+		test_bit <<= 1;
+	}
+}
+
+template <typename BitType>
+void for_each_flag(const std::function<void(BitType)> &f)
+{
+	for_each_filtered_flag(vk::FlagTraits<BitType>::allFlags, f);
+}
+
+vk::ImageUsageFlags choose_image_usage(const vk::ImageUsageFlags &requested_image_usage_flags,
+                                       vk::ImageUsageFlags        supported_image_usage,
+                                       vk::FormatFeatureFlags     supported_features)
+{
+	vk::ImageUsageFlags validated_image_usage_flags;
+	for_each_filtered_flag<vk::ImageUsageFlagBits>(requested_image_usage_flags, [&](vk::ImageUsageFlagBits flag) {
 		if ((flag & supported_image_usage) && validate_format_feature(flag, supported_features))
 		{
-			validated_image_usage_flags.insert(flag);
+			validated_image_usage_flags |= flag;
 		}
 		else
 		{
 			LOGW("(HPPSwapchain) Image usage ({}) requested but not supported.", vk::to_string(flag));
 		}
-	}
+	});
 
-	if (validated_image_usage_flags.empty())
+	if (!validated_image_usage_flags)
 	{
 		// Pick the first format from list of defaults, if supported
 		static const std::vector<vk::ImageUsageFlagBits> image_usage_priority_list = {
@@ -189,11 +228,11 @@ std::set<vk::ImageUsageFlagBits> choose_image_usage(const std::set<vk::ImageUsag
 		                 [&supported_image_usage, &supported_features](auto const image_usage) { return ((image_usage & supported_image_usage) && validate_format_feature(image_usage, supported_features)); });
 		if (priority_list_it != image_usage_priority_list.end())
 		{
-			validated_image_usage_flags.insert(*priority_list_it);
+			validated_image_usage_flags |= *priority_list_it;
 		}
 	}
 
-	if (validated_image_usage_flags.empty())
+	if (!validated_image_usage_flags)
 	{
 		throw std::runtime_error("No compatible image usage found.");
 	}
@@ -201,80 +240,60 @@ std::set<vk::ImageUsageFlagBits> choose_image_usage(const std::set<vk::ImageUsag
 	{
 		// Log image usage flags used
 		std::string usage_list;
-		for (vk::ImageUsageFlagBits image_usage : validated_image_usage_flags)
-		{
-			usage_list += to_string(image_usage) + " ";
-		}
+		for_each_filtered_flag<vk::ImageUsageFlagBits>(validated_image_usage_flags, [&](vk::ImageUsageFlagBits flag) {
+			usage_list += to_string(flag) + " ";
+		});
 		LOGI("(HPPSwapchain) Image usage flags: {}", usage_list);
 	}
 
 	return validated_image_usage_flags;
 }
 
-vk::ImageUsageFlags composite_image_flags(std::set<vk::ImageUsageFlagBits> &image_usage_flags)
-{
-	vk::ImageUsageFlags image_usage;
-	for (auto flag : image_usage_flags)
-	{
-		image_usage |= flag;
-	}
-	return image_usage;
-}
 }        // namespace
 
 namespace core
 {
-HPPSwapchain::HPPSwapchain(HPPSwapchain &old_swapchain, const vk::Extent2D &extent) :
-    HPPSwapchain{old_swapchain.device,
-                 old_swapchain.surface,
-                 old_swapchain.properties.present_mode,
-                 old_swapchain.present_mode_priority_list,
-                 old_swapchain.surface_format_priority_list,
-                 extent,
-                 old_swapchain.properties.image_count,
-                 old_swapchain.properties.pre_transform,
-                 old_swapchain.image_usage_flags,
-                 old_swapchain.get_handle()}
-{}
+HPPSwapchain::HPPSwapchain(const HPPSwapchain &old_swapchain) :
+    // Private copy constructor used only for re-creating swapchains
+    // DO NOT COPY the swapchain handle
+    // DO NOT COPY the swapchain image views
+    // ALWAYS overwrite the properties.old_swapchain with the old swapchain handle
+    device{old_swapchain.device},
+    surface{old_swapchain.surface},
+    properties{old_swapchain.properties},
+    present_mode_priority_list{old_swapchain.present_mode_priority_list},
+    surface_format_priority_list{old_swapchain.surface_format_priority_list}
+{
+	properties.old_swapchain = old_swapchain.handle;
+}
 
-HPPSwapchain::HPPSwapchain(HPPSwapchain &old_swapchain, const uint32_t image_count) :
-    HPPSwapchain{old_swapchain.device,
-                 old_swapchain.surface,
-                 old_swapchain.properties.present_mode,
-                 old_swapchain.present_mode_priority_list,
-                 old_swapchain.surface_format_priority_list,
-                 old_swapchain.properties.extent,
-                 image_count,
-                 old_swapchain.properties.pre_transform,
-                 old_swapchain.image_usage_flags,
-                 old_swapchain.get_handle()}
-{}
+HPPSwapchain::HPPSwapchain(const HPPSwapchain &old_swapchain, const vk::Extent2D &extent) :
+    HPPSwapchain::HPPSwapchain(old_swapchain)
+{
+	properties.extent = extent;
+	init();
+}
 
-HPPSwapchain::HPPSwapchain(HPPSwapchain &old_swapchain, const std::set<vk::ImageUsageFlagBits> &image_usage_flags) :
-    HPPSwapchain{old_swapchain.device,
-                 old_swapchain.surface,
-                 old_swapchain.properties.present_mode,
-                 old_swapchain.present_mode_priority_list,
-                 old_swapchain.surface_format_priority_list,
-                 old_swapchain.properties.extent,
-                 old_swapchain.properties.image_count,
-                 old_swapchain.properties.pre_transform,
-                 image_usage_flags,
-                 old_swapchain.get_handle()}
-{}
+HPPSwapchain::HPPSwapchain(const HPPSwapchain &old_swapchain, const uint32_t image_count) :
+    HPPSwapchain::HPPSwapchain(old_swapchain)
+{
+	properties.image_count = image_count;
+	init();
+}
 
-HPPSwapchain::HPPSwapchain(HPPSwapchain &old_swapchain, const vk::Extent2D &extent, const vk::SurfaceTransformFlagBitsKHR transform) :
-    HPPSwapchain{old_swapchain.device,
-                 old_swapchain.surface,
-                 old_swapchain.properties.present_mode,
-                 old_swapchain.present_mode_priority_list,
-                 old_swapchain.surface_format_priority_list,
-                 extent,
-                 old_swapchain.properties.image_count,
-                 transform,
-                 old_swapchain.image_usage_flags,
-                 old_swapchain.get_handle()}
-{}
+HPPSwapchain::HPPSwapchain(const HPPSwapchain &old_swapchain, const vk::ImageUsageFlags &image_usage_flags) :
+    HPPSwapchain::HPPSwapchain(old_swapchain)
+{
+	properties.image_usage = image_usage_flags;
+	init();
+}
+
+HPPSwapchain::HPPSwapchain(const HPPSwapchain &old_swapchain, const vk::Extent2D &extent, const vk::SurfaceTransformFlagBitsKHR transform) :
+    HPPSwapchain::HPPSwapchain(old_swapchain)
+{
+	properties.extent        = extent;
+	properties.pre_transform = transform;
+}
 
 HPPSwapchain::HPPSwapchain(HPPDevice                               &device,
                            vk::SurfaceKHR                           surface,
@@ -284,50 +303,46 @@ HPPSwapchain::HPPSwapchain(HPPDevice                               &device,
                            const vk::Extent2D                      &extent,
                            const uint32_t                           image_count,
                            const vk::SurfaceTransformFlagBitsKHR    transform,
-                           const std::set<vk::ImageUsageFlagBits>  &image_usage_flags,
-                           vk::SwapchainKHR                         old_swapchain) :
+                           const vk::ImageUsageFlags               &image_usage_flags) :
     device{device},
-    surface{surface}
+    surface{surface},
+    present_mode_priority_list{present_mode_priority_list},
+    surface_format_priority_list{surface_format_priority_list},
+    properties{
+        VK_NULL_HANDLE,
+        image_count,
+        extent,
+        vk::SurfaceFormatKHR{},
+        1,
+        image_usage_flags,
+        transform,
+        vk::CompositeAlphaFlagBitsKHR::eInherit,
+        vk::PresentModeKHR::eImmediate}
+
 {
-	this->present_mode_priority_list   = present_mode_priority_list;
-	this->surface_format_priority_list = surface_format_priority_list;
+	init();
+}
 
-	surface_formats = device.get_gpu().get_handle().getSurfaceFormatsKHR(surface);
-	LOGI("Surface supports the following surface formats:");
-	for (auto &surface_format : surface_formats)
-	{
-		LOGI("  \t{}", vk::to_string(surface_format.format) + ", " + vk::to_string(surface_format.colorSpace));
-	}
-
-	present_modes = device.get_gpu().get_handle().getSurfacePresentModesKHR(surface);
-	LOGI("Surface supports the following present modes:");
-	for (auto &present_mode : present_modes)
-	{
-		LOGI("  \t{}", to_string(present_mode));
-	}
-
+void HPPSwapchain::init()
+{
 	// Chose best properties based on surface capabilities
-	vk::SurfaceCapabilitiesKHR const surface_capabilities = device.get_gpu().get_handle().getSurfaceCapabilitiesKHR(surface);
+	vk::SurfaceCapabilitiesKHR surface_capabilities = device.get_gpu().get_handle().getSurfaceCapabilitiesKHR(surface);
+	if (surface_capabilities.maxImageCount == 0)
+	{
+		surface_capabilities.maxImageCount = std::numeric_limits<uint32_t>::max();
+	}
 
+	properties.surface_format                    = choose_surface_format(device, surface, properties.surface_format, surface_format_priority_list);
 	vk::FormatProperties const format_properties = device.get_gpu().get_handle().getFormatProperties(properties.surface_format.format);
-	this->image_usage_flags                      = choose_image_usage(image_usage_flags, surface_capabilities.supportedUsageFlags, format_properties.optimalTilingFeatures);
 
-	properties.image_count     = clamp(image_count,
-	                                   surface_capabilities.minImageCount,
-                                   surface_capabilities.maxImageCount ? surface_capabilities.maxImageCount : std::numeric_limits<uint32_t>::max());
-	properties.extent          = choose_extent(extent, surface_capabilities.minImageExtent, surface_capabilities.maxImageExtent, surface_capabilities.currentExtent);
+	properties.image_usage     = choose_image_usage(properties.image_usage, surface_capabilities.supportedUsageFlags, format_properties.optimalTilingFeatures);
+	properties.image_count     = clamp(properties.image_count, surface_capabilities.minImageCount, surface_capabilities.maxImageCount);
+	properties.extent          = choose_extent(properties.extent, surface_capabilities.minImageExtent, surface_capabilities.maxImageExtent, surface_capabilities.currentExtent);
 	properties.array_layers    = 1;
-	properties.surface_format  = choose_surface_format(properties.surface_format, surface_formats, surface_format_priority_list);
-	properties.image_usage     = composite_image_flags(this->image_usage_flags);
-	properties.pre_transform   = choose_transform(transform, surface_capabilities.supportedTransforms, surface_capabilities.currentTransform);
+	properties.pre_transform   = choose_transform(properties.pre_transform, surface_capabilities.supportedTransforms, surface_capabilities.currentTransform);
 	properties.composite_alpha = choose_composite_alpha(vk::CompositeAlphaFlagBitsKHR::eInherit, surface_capabilities.supportedCompositeAlpha);
-
-	properties.old_swapchain = old_swapchain;
-	properties.present_mode  = present_mode;
-
 	// Revalidate the present mode and surface format
-	properties.present_mode   = choose_present_mode(properties.present_mode, present_modes, present_mode_priority_list);
-	properties.surface_format = choose_surface_format(properties.surface_format, surface_formats, surface_format_priority_list);
+	properties.present_mode = choose_present_mode(device, surface, properties.present_mode, present_mode_priority_list);
 
 	vk::SwapchainCreateInfoKHR const create_info({},
 	                                             surface,
@@ -363,12 +378,9 @@ HPPSwapchain::HPPSwapchain(HPPSwapchain &&other) :
     surface{std::exchange(other.surface, nullptr)},
     handle{std::exchange(other.handle, nullptr)},
     images{std::exchange(other.images, {})},
-    surface_formats{std::exchange(other.surface_formats, {})},
-    present_modes{std::exchange(other.present_modes, {})},
     properties{std::exchange(other.properties, {})},
     present_mode_priority_list{std::exchange(other.present_mode_priority_list, {})},
-    surface_format_priority_list{std::exchange(other.surface_format_priority_list, {})},
-    image_usage_flags{std::move(other.image_usage_flags)}
+    surface_format_priority_list{std::exchange(other.surface_format_priority_list, {})}
 {}
 
 bool HPPSwapchain::is_valid() const

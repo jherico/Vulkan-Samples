@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2023, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -206,7 +206,7 @@ void SurfaceRotation::recreate_swapchain()
 
 	auto surface_extent = get_render_context().get_surface_extent();
 
-	get_render_context().update_swapchain(surface_extent, select_pre_transform());
+	get_render_context().update_swapchain_transform(surface_extent, select_pre_transform());
 
 	if (gui)
 	{
