@@ -354,7 +354,7 @@ VkSurfaceKHR GlfwWindow::create_surface(VkInstance instance, VkPhysicalDevice)
 
 	if (errCode != VK_SUCCESS)
 	{
-		return nullptr;
+		return VK_NULL_HANDLE;
 	}
 
 	return surface;

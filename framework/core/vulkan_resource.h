@@ -18,6 +18,7 @@
 #pragma once
 
 #include "common/vk_common.h"
+#include <vulkan/vulkan.hpp>
 #include <cassert>
 #include <cstdint>
 #include <type_traits>
@@ -33,60 +34,22 @@ namespace detail
 void set_debug_name(const Device *device, VkObjectType object_type, uint64_t handle, const char *debug_name);
 }
 
-template <typename HandleType>
-constexpr VkObjectType get_object_type(const HandleType &handle)
+template<typename VkHandleType>
+inline uint64_t get_handle_u64(VkHandleType handle)
 {
-	throw std::runtime_error("Unknown handle type");
-	return static_cast<VkObjectType>(-1);
+	// See https://github.com/KhronosGroup/Vulkan-Docs/issues/368 .
+	// Dispatchable and non-dispatchable handle types are *not* necessarily binary-compatible!
+	// Non-dispatchable handles _might_ be only 32-bit long. This is because, on 32-bit machines, they might be a typedef to a 32-bit pointer.
+	using UintHandle = typename std::conditional<sizeof(VkHandleType) == sizeof(uint32_t), uint32_t, uint64_t>::type;
+	return static_cast<uint64_t>(*reinterpret_cast<UintHandle const *>(&handle));
 }
 
-template <>
-constexpr VkObjectType get_object_type(const VkImage &handle)
-{
-	return VK_OBJECT_TYPE_IMAGE;
-}
-
-template <>
-constexpr VkObjectType get_object_type(const VkImageView &handle)
-{
-	return VK_OBJECT_TYPE_IMAGE_VIEW;
-}
-
-template <>
-constexpr VkObjectType get_object_type(const VkRenderPass &handle)
-{
-	return VK_OBJECT_TYPE_RENDER_PASS;
-}
-
-template <>
-constexpr VkObjectType get_object_type(const VkSampler &handle)
-{
-	return VK_OBJECT_TYPE_SAMPLER;
-}
-
-template <>
-constexpr VkObjectType get_object_type(const VkBuffer &handle)
-{
-	return VK_OBJECT_TYPE_BUFFER;
-}
-
-template <>
-constexpr VkObjectType get_object_type(const VkDevice &handle)
-{
-	return VK_OBJECT_TYPE_DEVICE;
-}
-
-template <>
-constexpr VkObjectType get_object_type(const VkCommandBuffer &handle)
-{
-	return VK_OBJECT_TYPE_COMMAND_BUFFER;
-}
 
 /// Inherit this for any Vulkan object with a handle of type `THandle`.
 ///
 /// This allows the derived class to store a Vulkan handle, and also a pointer to the parent Device.
 /// It also allow for adding debug data to any Vulkan object.
-template <typename THandle, typename Device = vkb::Device>
+template <typename THandle, VkObjectType ObjectType, typename Device = vkb::Device>
 class VulkanResource
 {
   public:
@@ -121,7 +84,7 @@ class VulkanResource
 
 	constexpr VkObjectType get_object_type() const
 	{
-		return vkb::core::get_object_type(handle);
+		return ObjectType;
 	}
 
 	inline Device &get_device() const
@@ -142,7 +105,7 @@ class VulkanResource
 		// Non-dispatchable handles _might_ be only 32-bit long. This is because, on 32-bit machines, they might be a typedef to a 32-bit pointer.
 		using UintHandle = typename std::conditional<sizeof(THandle) == sizeof(uint32_t), uint32_t, uint64_t>::type;
 
-		return static_cast<uint64_t>(reinterpret_cast<UintHandle>(handle));
+		return static_cast<uint64_t>(*reinterpret_cast<UintHandle const *>(&handle));
 	}
 
 	inline const std::string &get_debug_name() const

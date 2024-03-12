@@ -1,4 +1,4 @@
-/* Copyright (c) 2022-2023, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2022-2024, NVIDIA CORPORATION. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -92,7 +92,6 @@ class HPPVulkanResource
 		// Dispatchable and non-dispatchable handle types are *not* necessarily binary-compatible!
 		// Non-dispatchable handles _might_ be only 32-bit long. This is because, on 32-bit machines, they might be a typedef to a 32-bit pointer.
 		using UintHandle = typename std::conditional<sizeof(HPPHandle) == sizeof(uint32_t), uint32_t, uint64_t>::type;
-
 		return static_cast<uint64_t>(*reinterpret_cast<UintHandle const *>(&handle));
 	}
 

@@ -219,14 +219,14 @@ class AllocatedBase
 	 * @param size The amount of bytes to copy
 	 * @param offset The offset to start the copying into the mapped data
 	 */
-	size_t update(const uint8_t *data, size_t size, size_t offset = 0);
+	VkDeviceSize update(const uint8_t *data, VkDeviceSize size, VkDeviceSize offset = 0);
 	/**
 	 * @brief Converts any non byte data into bytes and then updates the buffer
 	 * @param data The data to copy from
 	 * @param size The amount of bytes to copy
 	 * @param offset The offset to start the copying into the mapped data
 	 */
-	size_t update(void const *data, size_t size, size_t offset = 0);
+	VkDeviceSize update(void const *data, VkDeviceSize size, VkDeviceSize offset = 0);
 
 	/**
 	 * @todo Use the vk::ArrayBuffer class to collapse some of these templates
@@ -235,13 +235,13 @@ class AllocatedBase
 	 * @param offset The offset to start the copying into the mapped data
 	 */
 	template <typename T>
-	size_t update(std::vector<T> const &data, size_t offset = 0)
+	VkDeviceSize update(std::vector<T> const &data, VkDeviceSize offset = 0)
 	{
 		return update(data.data(), data.size() * sizeof(T), offset);
 	}
 
 	template <typename T, size_t N>
-	size_t update(std::array<T, N> const &data, size_t offset = 0)
+	VkDeviceSize update(std::array<T, N> const &data, VkDeviceSize offset = 0)
 	{
 		return update(data.data(), data.size() * sizeof(T), offset);
 	}
@@ -274,9 +274,10 @@ class AllocatedBase
 
 template <
     typename HandleType,
+    VkObjectType ObjectType,
     typename MemoryType = VkDeviceMemory,
     typename DeviceType = const vkb::Device,
-    typename ParentType = vkb::core::VulkanResource<HandleType, DeviceType>>
+    typename ParentType = vkb::core::VulkanResource<HandleType, ObjectType, DeviceType>>
 class Allocated : public ParentType, public AllocatedBase
 {
   public:

@@ -67,7 +67,7 @@ HPPBuffer::HPPBuffer(
     HPPBufferBuilder const &builder) :
     Parent{builder.alloc_create_info, nullptr, &device}, size(builder.create_info.size)
 {
-	get_handle() = create_buffer(builder.create_info.operator const VkBufferCreateInfo &());
+	get_handle() = vk::Buffer{create_buffer(builder.create_info.operator const VkBufferCreateInfo &())};
 	if (!builder.debug_name.empty())
 	{
 		set_debug_name(builder.debug_name);
@@ -81,7 +81,7 @@ HPPBuffer::HPPBuffer(HPPBuffer &&other) noexcept :
 
 HPPBuffer::~HPPBuffer()
 {
-	destroy_buffer(get_handle());
+	destroy_buffer(get_handle().operator VkBuffer());
 }
 
 vk::DeviceSize HPPBuffer::get_size() const

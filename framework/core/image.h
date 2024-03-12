@@ -124,7 +124,7 @@ struct ImageBuilder : public allocated::Builder<ImageBuilder, VkImageCreateInfo>
 };
 
 class ImageView;
-class Image : public allocated::Allocated<VkImage>
+class Image : public allocated::Allocated<VkImage, VK_OBJECT_TYPE_IMAGE>
 {
 	VkImageCreateInfo create_info;
 

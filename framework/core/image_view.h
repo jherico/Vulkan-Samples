@@ -26,8 +26,9 @@ namespace vkb
 {
 namespace core
 {
-class ImageView : public VulkanResource<VkImageView, const Device>
+class ImageView : public VulkanResource<VkImageView, VK_OBJECT_TYPE_IMAGE_VIEW, const Device>
 {
+	using Parent = VulkanResource<VkImageView, VK_OBJECT_TYPE_IMAGE_VIEW, const Device>;
   public:
 	ImageView(Image &image, VkImageViewType view_type, VkFormat format = VK_FORMAT_UNDEFINED,
 	          uint32_t base_mip_level = 0, uint32_t base_array_layer = 0,

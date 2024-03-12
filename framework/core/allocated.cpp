@@ -105,7 +105,7 @@ void AllocatedBase::unmap()
 	}
 }
 
-size_t AllocatedBase::update(const uint8_t *data, size_t size, size_t offset)
+VkDeviceSize AllocatedBase::update(const uint8_t *data, VkDeviceSize size, VkDeviceSize offset)
 {
 	if (persistent)
 	{
@@ -122,7 +122,7 @@ size_t AllocatedBase::update(const uint8_t *data, size_t size, size_t offset)
 	return size;
 }
 
-size_t AllocatedBase::update(void const *data, size_t size, size_t offset)
+VkDeviceSize AllocatedBase::update(void const *data, VkDeviceSize size, VkDeviceSize offset)
 {
 	return update(reinterpret_cast<const uint8_t *>(data), size, offset);
 }

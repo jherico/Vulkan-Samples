@@ -43,7 +43,7 @@ struct SubpassInfo
 	std::string debug_name;
 };
 
-class RenderPass : public core::VulkanResource<VkRenderPass>
+class RenderPass : public core::VulkanResource<VkRenderPass, VK_OBJECT_TYPE_RENDER_PASS>
 {
   public:
 	RenderPass(Device                           &device,

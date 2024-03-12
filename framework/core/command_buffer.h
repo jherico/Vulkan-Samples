@@ -47,7 +47,7 @@ struct LightingState;
  * @brief Helper class to manage and record a command buffer, building and
  *        keeping track of pipeline state and resource bindings
  */
-class CommandBuffer : public core::VulkanResource<VkCommandBuffer>
+class CommandBuffer : public core::VulkanResource<VkCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER>
 {
   public:
 	enum class ResetMode

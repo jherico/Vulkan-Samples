@@ -30,7 +30,7 @@ namespace core
 /**
  * @brief Represents a Vulkan Sampler
  */
-class Sampler : public VulkanResource<VkSampler, const Device>
+class Sampler : public VulkanResource<VkSampler, VK_OBJECT_TYPE_SAMPLER, const Device>
 {
   public:
 	/**

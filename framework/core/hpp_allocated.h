@@ -64,11 +64,12 @@ struct HPPBuilder : public Builder<BuilderType, CreateInfoType, vk::SharingMode>
 template <typename HandleType>
 class HPPAllocated : public Allocated<
                          HandleType,
+                         static_cast<VkObjectType>(HandleType::objectType),
                          vk::DeviceMemory,
                          vkb::core::HPPDevice,
                          vkb::core::HPPVulkanResource<HandleType>>
 {
-	using Parent = Allocated<HandleType, vk::DeviceMemory, vkb::core::HPPDevice, vkb::core::HPPVulkanResource<HandleType>>;
+	using Parent = Allocated<HandleType, static_cast<VkObjectType>(HandleType::objectType), vk::DeviceMemory, vkb::core::HPPDevice, vkb::core::HPPVulkanResource<HandleType>>;
 
   public:
 	using Parent::get_handle;

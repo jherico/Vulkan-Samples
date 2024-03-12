@@ -70,7 +70,7 @@ struct BufferBuilder : public allocated::Builder<BufferBuilder, VkBufferCreateIn
 	BufferPtr build_unique(Device const &device) const;
 };
 
-class Buffer : public allocated::Allocated<VkBuffer>
+class Buffer : public allocated::Allocated<VkBuffer, VK_OBJECT_TYPE_BUFFER>
 {
   public:
 	static Buffer create_staging_buffer(Device const &device, VkDeviceSize size, const void *data);

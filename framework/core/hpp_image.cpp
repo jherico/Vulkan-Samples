@@ -81,7 +81,7 @@ HPPImage::HPPImage(HPPDevice              &device,
 HPPImage::HPPImage(HPPDevice &device, HPPImageBuilder const &builder) :
     HPPAllocated{builder.alloc_create_info, nullptr, &device}, create_info{builder.create_info}
 {
-	get_handle()           = create_image(create_info.operator const VkImageCreateInfo &());
+	get_handle()           = vk::Image{create_image(create_info.operator const VkImageCreateInfo &())};
 	subresource.arrayLayer = create_info.arrayLayers;
 	subresource.mipLevel   = create_info.mipLevels;
 	if (!builder.debug_name.empty())
@@ -123,7 +123,7 @@ HPPImage::HPPImage(HPPImage &&other) noexcept :
 
 HPPImage::~HPPImage()
 {
-	destroy_image(get_handle());
+	destroy_image(get_handle().operator VkImage());
 }
 
 uint8_t *HPPImage::map()

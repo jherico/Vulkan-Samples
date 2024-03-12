@@ -31,9 +31,9 @@ namespace filesystem
 {
 struct FileStat
 {
-	bool   is_file;
-	bool   is_directory;
-	size_t size;
+	bool      is_file;
+	bool      is_directory;
+	uintmax_t size;
 };
 
 using Path = std::filesystem::path;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2023-2024, NVIDIA CORPORATION. All rights reserved.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -87,7 +87,7 @@ HPPScopedDebugLabel::HPPScopedDebugLabel(const HPPDebugUtils &debug_utils,
                                          vk::CommandBuffer    command_buffer,
                                          std::string const   &name,
                                          glm::vec4 const      color) :
-    debug_utils{&debug_utils}, command_buffer{VK_NULL_HANDLE}
+    debug_utils{&debug_utils}, command_buffer{nullptr}
 {
 	if (!name.empty())
 	{

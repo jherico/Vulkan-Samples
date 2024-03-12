@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2021, Arm Limited and Contributors
+/* Copyright (c) 2019-2024, Arm Limited and Contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -84,7 +84,7 @@ ComputePipeline::ComputePipeline(Device &        device,
 	}
 
 	device.get_debug_utils().set_debug_name(device.get_handle(),
-	                                        VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(stage.module),
+	                                        VK_OBJECT_TYPE_SHADER_MODULE, vkb::core::get_handle_u64(stage.module),
 	                                        shader_module->get_debug_name().c_str());
 
 	// Create specialization info from tracked state.
@@ -169,7 +169,7 @@ GraphicsPipeline::GraphicsPipeline(Device &        device,
 		}
 
 		device.get_debug_utils().set_debug_name(device.get_handle(),
-		                                        VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(stage_create_info.module),
+		                                        VK_OBJECT_TYPE_SHADER_MODULE, vkb::core::get_handle_u64(stage_create_info.module),
 		                                        shader_module->get_debug_name().c_str());
 
 		stage_create_info.pSpecializationInfo = &specialization_info;
