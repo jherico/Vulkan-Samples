@@ -17,27 +17,10 @@
 
 #pragma once
 
-#include <core/hpp_descriptor_set.h>
-#include <core/hpp_framebuffer.h>
-#include <core/hpp_pipeline_layout.h>
-#include <core/hpp_render_pass.h>
-#include <hpp_resource_record.h>
-#include <hpp_resource_replay.h>
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
-namespace core
-{
-class HPPDescriptorPool;
-class HPPDescriptorSetLayout;
-class HPPImageView;
-}        // namespace core
-
-namespace rendering
-{
-class HPPRenderTarget;
-}
 
 /**
  * @brief Struct to hold the internal state of the Resource Cache
@@ -45,15 +28,15 @@ class HPPRenderTarget;
  */
 struct HPPResourceCacheState
 {
-	std::unordered_map<std::size_t, vkb::core::HPPShaderModule>        shader_modules;
-	std::unordered_map<std::size_t, vkb::core::HPPPipelineLayout>      pipeline_layouts;
-	std::unordered_map<std::size_t, vkb::core::HPPDescriptorSetLayout> descriptor_set_layouts;
-	std::unordered_map<std::size_t, vkb::core::HPPDescriptorPool>      descriptor_pools;
-	std::unordered_map<std::size_t, vkb::core::HPPRenderPass>          render_passes;
-	std::unordered_map<std::size_t, vkb::core::HPPGraphicsPipeline>    graphics_pipelines;
-	std::unordered_map<std::size_t, vkb::core::HPPComputePipeline>     compute_pipelines;
-	std::unordered_map<std::size_t, vkb::core::HPPDescriptorSet>       descriptor_sets;
-	std::unordered_map<std::size_t, vkb::core::HPPFramebuffer>         framebuffers;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPShaderModule>>        shader_modules;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPPipelineLayout>>      pipeline_layouts;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPDescriptorSetLayout>> descriptor_set_layouts;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPDescriptorPool>>      descriptor_pools;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPRenderPass>>          render_passes;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPGraphicsPipeline>>    graphics_pipelines;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPComputePipeline>>     compute_pipelines;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPDescriptorSet>>       descriptor_sets;
+	std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPFramebuffer>>         framebuffers;
 };
 
 /**
@@ -71,25 +54,41 @@ class HPPResourceCache
 	HPPResourceCache &operator=(const HPPResourceCache &) = delete;
 	HPPResourceCache &operator=(HPPResourceCache &&)      = delete;
 
-	void                               clear();
-	void                               clear_framebuffers();
-	void                               clear_pipelines();
-	const HPPResourceCacheState       &get_internal_state() const;
-	vkb::core::HPPComputePipeline     &request_compute_pipeline(vkb::rendering::HPPPipelineState &pipeline_state);
-	vkb::core::HPPDescriptorSet       &request_descriptor_set(vkb::core::HPPDescriptorSetLayout          &descriptor_set_layout,
-	                                                          const BindingMap<vk::DescriptorBufferInfo> &buffer_infos,
-	                                                          const BindingMap<vk::DescriptorImageInfo>  &image_infos);
-	vkb::core::HPPDescriptorSetLayout &request_descriptor_set_layout(const uint32_t                                   set_index,
-	                                                                 const std::vector<vkb::core::HPPShaderModule *> &shader_modules,
-	                                                                 const std::vector<vkb::core::HPPShaderResource> &set_resources);
-	vkb::core::HPPFramebuffer         &request_framebuffer(const vkb::rendering::HPPRenderTarget &render_target, const vkb::core::HPPRenderPass &render_pass);
-	vkb::core::HPPGraphicsPipeline    &request_graphics_pipeline(vkb::rendering::HPPPipelineState &pipeline_state);
-	vkb::core::HPPPipelineLayout      &request_pipeline_layout(const std::vector<vkb::core::HPPShaderModule *> &shader_modules);
-	vkb::core::HPPRenderPass          &request_render_pass(const std::vector<vkb::rendering::HPPAttachment> &attachments,
-	                                                       const std::vector<vkb::common::HPPLoadStoreInfo> &load_store_infos,
-	                                                       const std::vector<vkb::core::HPPSubpassInfo>     &subpasses);
-	vkb::core::HPPShaderModule        &request_shader_module(
-	           vk::ShaderStageFlagBits stage, const vkb::core::HPPShaderSource &glsl_source, const vkb::core::HPPShaderVariant &shader_variant = {});
+	void                         clear();
+	void                         clear_framebuffers();
+	void                         clear_pipelines();
+	const HPPResourceCacheState &get_internal_state() const;
+
+	vkb::core::HPPComputePipeline &request_compute_pipeline(
+	    vkb::rendering::HPPPipelineState &pipeline_state);
+
+	vkb::core::HPPDescriptorSet &request_descriptor_set(
+	    vkb::core::HPPDescriptorSetLayout          &descriptor_set_layout,
+	    const BindingMap<vk::DescriptorBufferInfo> &buffer_infos,
+	    const BindingMap<vk::DescriptorImageInfo>  &image_infos);
+
+	vkb::core::HPPDescriptorSetLayout &request_descriptor_set_layout(
+	    const uint32_t                                   set_index,
+	    const std::vector<vkb::core::HPPShaderModule *> &shader_modules,
+	    const std::vector<vkb::core::HPPShaderResource> &set_resources);
+	vkb::core::HPPFramebuffer &request_framebuffer(
+	    const vkb::rendering::HPPRenderTarget &render_target,
+	    const vkb::core::HPPRenderPass        &render_pass);
+	vkb::core::HPPGraphicsPipeline &request_graphics_pipeline(
+	    vkb::rendering::HPPPipelineState &pipeline_state);
+	vkb::core::HPPPipelineLayout &request_pipeline_layout(
+	    const std::vector<vkb::core::HPPShaderModule *> &shader_modules);
+	vkb::core::HPPRenderPass &request_render_pass(
+	    const std::vector<vkb::rendering::HPPAttachment> &attachments,
+	    const std::vector<vkb::common::HPPLoadStoreInfo> &load_store_infos,
+	    const std::vector<vkb::core::HPPSubpassInfo>     &subpasses);
+	vkb::core::HPPShaderModule &request_shader_module(
+	    vk::ShaderStageFlagBits            stage,
+	    const vkb::core::HPPShaderSource  &glsl_source,
+	    const vkb::core::HPPShaderVariant &shader_variant);
+	vkb::core::HPPShaderModule &request_shader_module(
+	    vk::ShaderStageFlagBits            stage,
+	    const vkb::core::HPPShaderSource  &glsl_source);
 	std::vector<uint8_t> serialize();
 	void                 set_pipeline_cache(vk::PipelineCache pipeline_cache);
 
@@ -101,18 +100,18 @@ class HPPResourceCache
 	void warmup(const std::vector<uint8_t> &data);
 
   private:
-	vkb::core::HPPDevice  &device;
-	vkb::HPPResourceRecord recorder                    = {};
-	vkb::HPPResourceReplay replayer                    = {};
-	vk::PipelineCache      pipeline_cache              = nullptr;
-	HPPResourceCacheState  state                       = {};
-	std::mutex             descriptor_set_mutex        = {};
-	std::mutex             pipeline_layout_mutex       = {};
-	std::mutex             shader_module_mutex         = {};
-	std::mutex             descriptor_set_layout_mutex = {};
-	std::mutex             graphics_pipeline_mutex     = {};
-	std::mutex             render_pass_mutex           = {};
-	std::mutex             compute_pipeline_mutex      = {};
-	std::mutex             framebuffer_mutex           = {};
+	vkb::core::HPPDevice                   &device;
+	vk::PipelineCache                       pipeline_cache;
+	std::unique_ptr<vkb::HPPResourceRecord> recorder;
+	std::unique_ptr<vkb::HPPResourceReplay> replayer;
+	HPPResourceCacheState                   state                       = {};
+	std::mutex                              descriptor_set_mutex        = {};
+	std::mutex                              pipeline_layout_mutex       = {};
+	std::mutex                              shader_module_mutex         = {};
+	std::mutex                              descriptor_set_layout_mutex = {};
+	std::mutex                              graphics_pipeline_mutex     = {};
+	std::mutex                              render_pass_mutex           = {};
+	std::mutex                              compute_pipeline_mutex      = {};
+	std::mutex                              framebuffer_mutex           = {};
 };
 }        // namespace vkb

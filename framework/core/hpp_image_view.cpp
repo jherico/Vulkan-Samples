@@ -19,6 +19,7 @@
 
 #include "common/hpp_vk_common.h"
 #include "core/hpp_device.h"
+#include "core/hpp_image.h"
 #include <vulkan/vulkan_format_traits.hpp>
 
 namespace vkb

@@ -17,77 +17,101 @@
 
 #pragma once
 
-#include "resource_binding_state.h"
-#include <core/hpp_buffer.h>
-#include <core/hpp_image_view.h>
-#include <core/hpp_sampler.h>
+#include <common/hpp_vk_common.h>
+#if 0
+#	include "resource_binding_state.h"
+#	include <core/hpp_buffer.h>
+#	include <core/hpp_image_view.h>
+#	include <core/hpp_sampler.h>
+#endif
 
 namespace vkb
 {
+namespace core
+{
+class HPPBuffer;
+class HPPImageView;
+class HPPSampler;
+class HPPImageView;
+}
+
 /**
- * @brief facade class around vkb::ResourceBindingState, providing a vulkan.hpp-based interface
+ * @brief A resource info is a struct containing the actual resource data.
  *
- * See vkb::ResourceBindingState for documentation
+ * This will be referenced by a buffer info or image info descriptor inside a descriptor set.
  */
 struct HPPResourceInfo
 {
-	bool                           dirty      = false;
-	const vkb::core::HPPBuffer    *buffer     = nullptr;
-	vk::DeviceSize                 offset     = 0;
-	vk::DeviceSize                 range      = 0;
-	const vkb::core::HPPImageView *image_view = nullptr;
-	const vkb::core::HPPSampler   *sampler    = nullptr;
+	bool                      dirty      = false;
+	const core::HPPBuffer    *buffer     = nullptr;
+	vk::DeviceSize            offset     = 0;
+	vk::DeviceSize            range      = 0;
+	const core::HPPImageView *image_view = nullptr;
+	const core::HPPSampler   *sampler    = nullptr;
 };
-
-class HPPResourceSet : private vkb::ResourceSet
+/**
+ * @brief A resource set is a set of bindings containing resources that were bound
+ *        by a command buffer.
+ *
+ * The ResourceSet has a one to one mapping with a DescriptorSet.
+ */
+class HPPResourceSet
 {
   public:
-	using vkb::ResourceSet::is_dirty;
+	void reset();
 
-  public:
-	const BindingMap<HPPResourceInfo> &get_resource_bindings() const
-	{
-		return reinterpret_cast<BindingMap<HPPResourceInfo> const &>(vkb::ResourceSet::get_resource_bindings());
-	}
+	bool is_dirty() const;
+
+	void clear_dirty();
+
+	void clear_dirty(uint32_t binding, uint32_t array_element);
+
+	void bind_buffer(const core::HPPBuffer &buffer, vk::DeviceSize offset, vk::DeviceSize range, uint32_t binding, uint32_t array_element);
+
+	void bind_image(const core::HPPImageView &image_view, const core::HPPSampler &sampler, uint32_t binding, uint32_t array_element);
+
+	void bind_image(const core::HPPImageView &image_view, uint32_t binding, uint32_t array_element);
+
+	void bind_input(const core::HPPImageView &image_view, uint32_t binding, uint32_t array_element);
+
+	const BindingMap<HPPResourceInfo> &get_resource_bindings() const;
+
+  private:
+	bool dirty{false};
+
+	BindingMap<HPPResourceInfo> resource_bindings;
 };
 
-class HPPResourceBindingState : private vkb::ResourceBindingState
+/**
+ * @brief The resource binding state of a command buffer.
+ *
+ * Keeps track of all the resources bound by the command buffer. The ResourceBindingState is used by
+ * the command buffer to create the appropriate descriptor sets when it comes to draw.
+ */
+class HPPResourceBindingState
 {
   public:
-	using vkb::ResourceBindingState::clear_dirty;
-	using vkb::ResourceBindingState::is_dirty;
-	using vkb::ResourceBindingState::reset;
+	void reset();
 
-  public:
-	void bind_buffer(const vkb::core::HPPBuffer &buffer, vk::DeviceSize offset, vk::DeviceSize range, uint32_t set, uint32_t binding, uint32_t array_element)
-	{
-		vkb::ResourceBindingState::bind_buffer(reinterpret_cast<vkb::core::Buffer const &>(buffer),
-		                                       static_cast<VkDeviceSize>(offset),
-		                                       static_cast<VkDeviceSize>(range),
-		                                       set,
-		                                       binding,
-		                                       array_element);
-	}
+	bool is_dirty();
 
-	void bind_image(const vkb::core::HPPImageView &image_view, const vkb::core::HPPSampler &sampler, uint32_t set, uint32_t binding, uint32_t array_element)
-	{
-		vkb::ResourceBindingState::bind_image(
-		    reinterpret_cast<vkb::core::ImageView const &>(image_view), reinterpret_cast<vkb::core::Sampler const &>(sampler), set, binding, array_element);
-	}
+	void clear_dirty();
 
-	void bind_image(const vkb::core::HPPImageView &image_view, uint32_t set, uint32_t binding, uint32_t array_element)
-	{
-		vkb::ResourceBindingState::bind_image(reinterpret_cast<vkb::core::ImageView const &>(image_view), set, binding, array_element);
-	}
+	void clear_dirty(uint32_t set);
 
-	void bind_input(const vkb::core::HPPImageView &image_view, uint32_t set, uint32_t binding, uint32_t array_element)
-	{
-		vkb::ResourceBindingState::bind_input(reinterpret_cast<vkb::core::ImageView const &>(image_view), set, binding, array_element);
-	}
+	void bind_buffer(const core::HPPBuffer &buffer, vk::DeviceSize offset, vk::DeviceSize range, uint32_t set, uint32_t binding, uint32_t array_element);
 
-	const std::unordered_map<uint32_t, vkb::HPPResourceSet> &get_resource_sets()
-	{
-		return reinterpret_cast<std::unordered_map<uint32_t, vkb::HPPResourceSet> const &>(vkb::ResourceBindingState::get_resource_sets());
-	}
+	void bind_image(const core::HPPImageView &image_view, const core::HPPSampler &sampler, uint32_t set, uint32_t binding, uint32_t array_element);
+
+	void bind_image(const core::HPPImageView &image_view, uint32_t set, uint32_t binding, uint32_t array_element);
+
+	void bind_input(const core::HPPImageView &image_view, uint32_t set, uint32_t binding, uint32_t array_element);
+
+	const std::unordered_map<uint32_t, HPPResourceSet> &get_resource_sets();
+
+  private:
+	bool dirty{false};
+
+	std::unordered_map<uint32_t, HPPResourceSet> resource_sets;
 };
 }        // namespace vkb

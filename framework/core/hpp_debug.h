@@ -17,15 +17,13 @@
 
 #pragma once
 
+#include "common/hpp_vk_common.h"
 #include <common/glm_common.h>
-#include <vulkan/vulkan.hpp>
 
 namespace vkb
 {
 namespace core
 {
-class HPPCommandBuffer;
-
 /**
  * @brief An interface over platform-specific debug extensions.
  */

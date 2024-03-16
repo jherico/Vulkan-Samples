@@ -50,6 +50,7 @@ set(FRAMEWORK_FILES
     hpp_resource_record.h
     hpp_resource_replay.h
     hpp_semaphore_pool.h
+    vkb_forward.h
     # Source Files
     gui.cpp
     drawer.cpp
@@ -69,8 +70,17 @@ set(FRAMEWORK_FILES
     timer.cpp
     camera.cpp
     hpp_api_vulkan_sample.cpp
+    hpp_buffer_pool.cpp
+    hpp_fence_pool.cpp
+    hpp_glsl_compiler.cpp
+    hpp_gltf_loader.cpp
     hpp_gui.cpp
-    hpp_resource_cache.cpp)
+    hpp_resource_binding_state.cpp
+    hpp_resource_cache.cpp
+    hpp_resource_record.cpp
+    hpp_resource_replay.cpp
+    hpp_semaphore_pool.cpp
+    )
 
 set(COMMON_FILES
     # Header Files
@@ -131,9 +141,13 @@ set(RENDERING_FILES
     rendering/render_pipeline.cpp
     rendering/render_target.cpp
     rendering/subpass.cpp
+    rendering/hpp_pipeline_state.cpp
     rendering/hpp_render_context.cpp
     rendering/hpp_render_frame.cpp
-    rendering/hpp_render_target.cpp)
+    rendering/hpp_render_pipeline.cpp
+    rendering/hpp_render_target.cpp
+    rendering/hpp_subpass.cpp
+)
 
 set(RENDERING_SUBPASSES_FILES
     # Header files
@@ -301,19 +315,29 @@ set(CORE_FILES
     core/query_pool.cpp
     core/acceleration_structure.cpp
     core/vulkan_resource.cpp
+    core/hpp_allocated.cpp
     core/hpp_buffer.cpp
     core/hpp_command_buffer.cpp
     core/hpp_command_pool.cpp
     core/hpp_debug.cpp
+    core/hpp_descriptor_pool.cpp
+    core/hpp_descriptor_set.cpp
+    core/hpp_descriptor_set_layout.cpp
     core/hpp_device.cpp
+    core/hpp_framebuffer.cpp
     core/hpp_image.cpp
     core/hpp_image_view.cpp
     core/hpp_instance.cpp
     core/hpp_physical_device.cpp
+    core/hpp_pipeline.cpp
     core/hpp_pipeline_layout.cpp
     core/hpp_queue.cpp
+    core/hpp_query_pool.cpp
+    core/hpp_render_pass.cpp
     core/hpp_sampler.cpp
+    core/hpp_shader_module.cpp
     core/hpp_swapchain.cpp
+    core/hpp_vulkan_resource.cpp
 )
 
 set(PLATFORM_FILES

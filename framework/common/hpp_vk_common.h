@@ -17,11 +17,15 @@
 
 #pragma once
 
-#include "common/vk_common.h"
+#include <core/util/logging.hpp>
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_hash.hpp>
+#include <vulkan/vulkan_format_traits.hpp>
 
-#include "core/util/logging.hpp"
-#include "vulkan/vulkan.hpp"
-#include "vulkan/vulkan_format_traits.hpp"
+#include "common/vk_common.h"
+#include "common/helpers.h"
+#include "vkb_forward.h"
+
 
 namespace vkb
 {

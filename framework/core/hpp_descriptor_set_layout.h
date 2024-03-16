@@ -17,53 +17,78 @@
 
 #pragma once
 
-#include "core/descriptor_set_layout.h"
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
 namespace core
 {
-class HPPDevice;
-class HPPShaderModule;
-struct HPPShaderResource;
 
 /**
- * @brief facade class around vkb::DescriptorSetLayout, providing a vulkan.hpp-based interface
+ * @brief facade class around vkb::HPPDescriptorSetLayout, providing a vulkan.hpp-based interface
  *
- * See vkb::DescriptorSetLayout for documentation
+ * See vkb::HPPDescriptorSetLayout for documentation
  */
-class HPPDescriptorSetLayout : private vkb::DescriptorSetLayout
+class HPPDescriptorSetLayout
 {
   public:
-	using vkb::DescriptorSetLayout::get_index;
+	/**
+	 * @brief Creates a descriptor set layout from a set of resources
+	 * @param device A valid Vulkan device
+	 * @param set_index The descriptor set index this layout maps to
+	 * @param shader_modules The shader modules this set layout will be used for
+	 * @param resource_set A grouping of shader resources belonging to the same set
+	 */
+	HPPDescriptorSetLayout(
+	    HPPDevice                            &device,
+	    const uint32_t                        set_index,
+	    const std::vector<HPPShaderModule *> &shader_modules,
+	    const std::vector<HPPShaderResource> &resource_set);
 
-  public:
-	HPPDescriptorSetLayout(vkb::core::HPPDevice                            &device,
-	                       const uint32_t                                   set_index,
-	                       const std::vector<vkb::core::HPPShaderModule *> &shader_modules,
-	                       const std::vector<vkb::core::HPPShaderResource> &resource_set) :
-	    vkb::DescriptorSetLayout(reinterpret_cast<vkb::Device &>(device),
-	                             set_index,
-	                             reinterpret_cast<std::vector<vkb::ShaderModule *> const &>(shader_modules),
-	                             reinterpret_cast<std::vector<vkb::ShaderResource> const &>(resource_set))
-	{}
+	HPPDescriptorSetLayout(const HPPDescriptorSetLayout &) = delete;
 
-	vk::DescriptorSetLayout get_handle() const
-	{
-		return static_cast<vk::DescriptorSetLayout>(vkb::DescriptorSetLayout::get_handle());
-	}
+	HPPDescriptorSetLayout(HPPDescriptorSetLayout &&other);
 
-	std::unique_ptr<vk::DescriptorSetLayoutBinding> get_layout_binding(const uint32_t binding_index) const
-	{
-		return std::unique_ptr<vk::DescriptorSetLayoutBinding>(
-		    reinterpret_cast<vk::DescriptorSetLayoutBinding *>(vkb::DescriptorSetLayout::get_layout_binding(binding_index).release()));
-	}
+	~HPPDescriptorSetLayout();
 
-	vk::DescriptorBindingFlagsEXT get_layout_binding_flag(const uint32_t binding_index) const
-	{
-		return static_cast<vk::DescriptorBindingFlagsEXT>(vkb::DescriptorSetLayout::get_layout_binding_flag(binding_index));
-	}
+	HPPDescriptorSetLayout &operator=(const HPPDescriptorSetLayout &) = delete;
+
+	HPPDescriptorSetLayout &operator=(HPPDescriptorSetLayout &&) = delete;
+
+	vk::DescriptorSetLayout get_handle() const;
+
+	const uint32_t get_index() const;
+
+	const std::vector<vk::DescriptorSetLayoutBinding> &get_bindings() const;
+
+	std::unique_ptr<vk::DescriptorSetLayoutBinding> get_layout_binding(const uint32_t binding_index) const;
+
+	std::unique_ptr<vk::DescriptorSetLayoutBinding> get_layout_binding(const std::string &name) const;
+
+	const std::vector<vk::DescriptorBindingFlagsEXT> &get_binding_flags() const;
+
+	vk::DescriptorBindingFlagsEXT get_layout_binding_flag(const uint32_t binding_index) const;
+
+	const std::vector<HPPShaderModule *> &get_shader_modules() const;
+
+  private:
+	HPPDevice &device;
+
+	vk::DescriptorSetLayout handle{VK_NULL_HANDLE};
+
+	const uint32_t set_index;
+
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+
+	std::vector<vk::DescriptorBindingFlagsEXT> binding_flags;
+
+	std::unordered_map<uint32_t, vk::DescriptorSetLayoutBinding> bindings_lookup;
+
+	std::unordered_map<uint32_t, vk::DescriptorBindingFlagsEXT> binding_flags_lookup;
+
+	std::unordered_map<std::string, uint32_t> resources_lookup;
+
+	std::vector<HPPShaderModule *> shader_modules;
 };
 }        // namespace core
 }        // namespace vkb

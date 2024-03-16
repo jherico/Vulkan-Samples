@@ -17,37 +17,41 @@
 
 #pragma once
 
-#include "semaphore_pool.h"
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
-/**
- * @brief facade class around vkb::SemaphorePool, providing a vulkan.hpp-based interface
- *
- * See vkb::SemaphorePool for documentation
- */
-class HPPSemaphorePool : private vkb::SemaphorePool
+class HPPDevice;
+
+class HPPSemaphorePool
 {
   public:
-	using vkb::SemaphorePool::reset;
+	HPPSemaphorePool(HPPDevice &device);
 
-	HPPSemaphorePool(vkb::core::HPPDevice &device) :
-	    vkb::SemaphorePool(reinterpret_cast<vkb::Device &>(device))
-	{}
+	HPPSemaphorePool(const HPPSemaphorePool &) = delete;
 
-	void release_owned_semaphore(vk::Semaphore semaphore)
-	{
-		vkb::SemaphorePool::release_owned_semaphore(static_cast<VkSemaphore>(semaphore));
-	}
+	HPPSemaphorePool(HPPSemaphorePool &&other) = delete;
 
-	vk::Semaphore request_semaphore()
-	{
-		return static_cast<vk::Semaphore>(vkb::SemaphorePool::request_semaphore());
-	}
+	~HPPSemaphorePool();
 
-	vk::Semaphore request_semaphore_with_ownership()
-	{
-		return static_cast<vk::Semaphore>(vkb::SemaphorePool::request_semaphore_with_ownership());
-	}
+	HPPSemaphorePool &operator=(const HPPSemaphorePool &) = delete;
+
+	HPPSemaphorePool &operator=(HPPSemaphorePool &&) = delete;
+
+	vk::Semaphore request_semaphore();
+	vk::Semaphore request_semaphore_with_ownership();
+	void          release_owned_semaphore(vk::Semaphore semaphore);
+
+	void reset();
+
+	uint32_t get_active_semaphore_count() const;
+
+  private:
+	HPPDevice &device;
+
+	std::vector<vk::Semaphore> semaphores;
+	std::vector<vk::Semaphore> released_semaphores;
+
+	uint32_t active_semaphore_count{0};
 };
 }        // namespace vkb

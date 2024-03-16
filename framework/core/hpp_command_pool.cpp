@@ -42,9 +42,11 @@ HPPCommandPool::HPPCommandPool(HPPDevice                      &d,
 			break;
 	}
 
-	vk::CommandPoolCreateInfo command_pool_create_info(flags, queue_family_index);
-
-	handle = device.get_handle().createCommandPool(command_pool_create_info);
+	handle = device.get_handle().createCommandPool(
+	    vk::CommandPoolCreateInfo{
+	        flags,
+	        queue_family_index,
+	    });
 }
 
 HPPCommandPool::HPPCommandPool(HPPCommandPool &&other) :

@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <common/error.h>
-
 #include <vulkan/vulkan.hpp>
 
 namespace vkb
@@ -30,12 +28,28 @@ namespace common
  *
  * See vkb::VulkanException for documentation
  */
-class HPPVulkanException : public vkb::VulkanException
+class HPPVulkanException : public std::runtime_error
 {
   public:
 	HPPVulkanException(vk::Result result, std::string const &msg = "Vulkan error") :
-	    vkb::VulkanException(static_cast<VkResult>(result), msg)
+	    result{result},
+	    std::runtime_error{msg},
+	    error_message{std::string{std::runtime_error::what()} + " : " + vk::to_string(result)}
 	{}
+
+	/**
+	 * @brief Returns the Vulkan error code as string
+	 * @return String message of exception
+	 */
+	const char *what() const noexcept override
+	{
+		return error_message.c_str();
+	};
+
+	const vk::Result result;
+
+  private:
+	const std::string error_message;
 };
 }        // namespace common
 }        // namespace vkb

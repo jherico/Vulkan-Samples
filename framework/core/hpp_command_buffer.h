@@ -18,20 +18,12 @@
 #pragma once
 
 #include <common/hpp_vk_common.h>
-#include <core/hpp_framebuffer.h>
-#include <core/hpp_query_pool.h>
-#include <hpp_resource_binding_state.h>
-#include <rendering/hpp_pipeline_state.h>
-#include <rendering/hpp_render_target.h>
-#include <rendering/hpp_subpass.h>
+#include <core/hpp_vulkan_resource.h>
 
 namespace vkb
 {
 namespace core
 {
-class HPPCommandPool;
-class HPPDescriptorSetLayout;
-
 /**
  * @brief Helper class to manage and record a command buffer, building and
  *        keeping track of pipeline state and resource bindings
@@ -216,15 +208,16 @@ class HPPCommandBuffer : public core::HPPVulkanResource<vk::CommandBuffer>
 	const bool is_render_size_optimal(const vk::Extent2D &extent, const vk::Rect2D &render_area);
 
   private:
-	const vk::CommandBufferLevel     level = {};
-	vkb::core::HPPCommandPool       &command_pool;
-	RenderPassBinding                current_render_pass     = {};
-	vkb::rendering::HPPPipelineState pipeline_state          = {};
-	vkb::HPPResourceBindingState     resource_binding_state  = {};
-	std::vector<uint8_t>             stored_push_constants   = {};
-	uint32_t                         max_push_constants_size = {};
-	vk::Extent2D                     last_framebuffer_extent = {};
-	vk::Extent2D                     last_render_area_extent = {};
+	const vk::CommandBufferLevel level = {};
+	vkb::core::HPPCommandPool   &command_pool;
+	RenderPassBinding            current_render_pass     = {};
+	std::vector<uint8_t>         stored_push_constants   = {};
+	uint32_t                     max_push_constants_size = {};
+	vk::Extent2D                 last_framebuffer_extent = {};
+	vk::Extent2D                 last_render_area_extent = {};
+
+	std::unique_ptr<vkb::rendering::HPPPipelineState> pipeline_state         = {};
+	std::unique_ptr<vkb::HPPResourceBindingState>     resource_binding_state = {};
 
 	// If true, it becomes the responsibility of the caller to update ANY descriptor bindings
 	// that contain update after bind, as they wont be implicitly updated

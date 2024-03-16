@@ -17,13 +17,14 @@
 
 #pragma once
 
-#include "core/hpp_image.h"
 #include "core/hpp_vulkan_resource.h"
 
 namespace vkb
 {
 namespace core
 {
+class HPPImage;
+
 class HPPImageView : public vkb::core::HPPVulkanResource<vk::ImageView>
 {
   public:

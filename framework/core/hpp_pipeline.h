@@ -17,7 +17,8 @@
 
 #pragma once
 
-#include "core/pipeline.h"
+#include <common/hpp_vk_common.h>
+#include <rendering/hpp_pipeline_state.h>
 
 namespace vkb
 {
@@ -28,46 +29,58 @@ class HPPPipelineState;
 
 namespace core
 {
-/**
- * @brief facade class around vkb::Pipeline, providing a vulkan.hpp-based interface
- *
- * See vkb::Pipeline for documentation
- */
-class HPPPipeline : private vkb::Pipeline
+class HPPDevice;
+
+class HPPPipeline
 {
   public:
-	vk::Pipeline get_handle() const
-	{
-		return static_cast<vk::Pipeline>(vkb::Pipeline::get_handle());
-	}
+	using PipelineState = rendering::HPPPipelineState;
+	HPPPipeline(HPPDevice &device);
+
+	HPPPipeline(const HPPPipeline &) = delete;
+
+	HPPPipeline(HPPPipeline &&other);
+
+	virtual ~HPPPipeline();
+
+	HPPPipeline &operator=(const HPPPipeline &) = delete;
+
+	HPPPipeline &operator=(HPPPipeline &&) = delete;
+
+	vk::Pipeline get_handle() const;
+
+	const PipelineState &get_state() const;
+
+  protected:
+	HPPDevice &device;
+
+	vk::Pipeline handle;
+
+	rendering::HPPPipelineState state;
 };
 
-class HPPComputePipeline : private vkb::ComputePipeline
+class HPPComputePipeline : public HPPPipeline
 {
   public:
-	HPPComputePipeline(vkb::core::HPPDevice &device, vk::PipelineCache pipeline_cache, vkb::rendering::HPPPipelineState &pipeline_state) :
-	    vkb::ComputePipeline(
-	        reinterpret_cast<vkb::Device &>(device), static_cast<VkPipelineCache>(pipeline_cache), reinterpret_cast<vkb::PipelineState &>(pipeline_state))
-	{}
+	HPPComputePipeline(HPPComputePipeline &&) = default;
 
-	vk::Pipeline get_handle() const
-	{
-		return static_cast<vk::Pipeline>(vkb::ComputePipeline::get_handle());
-	}
+	virtual ~HPPComputePipeline() = default;
+
+	HPPComputePipeline(HPPDevice        &device,
+	                   vk::PipelineCache pipeline_cache,
+	                   PipelineState    &pipeline_state);
 };
 
-class HPPGraphicsPipeline : private vkb::GraphicsPipeline
+class HPPGraphicsPipeline : public HPPPipeline
 {
   public:
-	HPPGraphicsPipeline(vkb::core::HPPDevice &device, vk::PipelineCache pipeline_cache, vkb::rendering::HPPPipelineState &pipeline_state) :
-	    vkb::GraphicsPipeline(
-	        reinterpret_cast<vkb::Device &>(device), static_cast<VkPipelineCache>(pipeline_cache), reinterpret_cast<vkb::PipelineState &>(pipeline_state))
-	{}
+	HPPGraphicsPipeline(HPPGraphicsPipeline &&) = default;
 
-	vk::Pipeline get_handle() const
-	{
-		return static_cast<vk::Pipeline>(vkb::GraphicsPipeline::get_handle());
-	}
+	virtual ~HPPGraphicsPipeline() = default;
+
+	HPPGraphicsPipeline(HPPDevice           &device,
+	                    vk::PipelineCache pipeline_cache,
+	                    PipelineState    &pipeline_state);
 };
 }        // namespace core
 }        // namespace vkb

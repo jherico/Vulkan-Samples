@@ -17,35 +17,37 @@
 
 #pragma once
 
-#include <fence_pool.h>
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
-namespace core
-{
-class HPPDevice;
-}
 
-/**
- * @brief facade class around vkb::FencePool, providing a vulkan.hpp-based interface
- *
- * See vkb::FencePool for documentation
- */
-class HPPFencePool : private vkb::FencePool
+class HPPFencePool
 {
   public:
-	using vkb::FencePool::reset;
-	using vkb::FencePool::wait;
+	HPPFencePool(core::HPPDevice &device);
 
-	HPPFencePool(vkb::core::HPPDevice &device) :
-	    vkb::FencePool(reinterpret_cast<vkb::Device &>(device))
-	{}
+	HPPFencePool(const HPPFencePool &) = delete;
 
-	vk::Fence request_fence()
-	{
-		return static_cast<vk::Fence>(vkb::FencePool::request_fence());
-	}
+	HPPFencePool(HPPFencePool &&other) = delete;
+
+	~HPPFencePool();
+
+	HPPFencePool &operator=(const HPPFencePool &) = delete;
+
+	HPPFencePool &operator=(HPPFencePool &&) = delete;
+
+	vk::Fence request_fence();
+
+	[[nodiscard]] vk::Result wait(uint32_t timeout = std::numeric_limits<uint32_t>::max()) const;
+
+	[[nodiscard]] vk::Result reset();
+
+  private:
+	core::HPPDevice &device;
+
+	std::vector<vk::Fence> fences;
+
+	uint32_t active_fence_count{0};
 };
-
 }        // namespace vkb

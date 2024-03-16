@@ -17,8 +17,7 @@
 
 #pragma once
 
-#include "core/render_pass.h"
-#include <vulkan/vulkan.hpp>
+#include <core/hpp_vulkan_resource.h>
 
 namespace vkb
 {
@@ -51,31 +50,36 @@ struct HPPSubpassInfo
 	std::string             debug_name;
 };
 
-class HPPRenderPass : private vkb::RenderPass
+class HPPRenderPass : public HPPVulkanResource<vk::RenderPass>
 {
-  public:
-	using vkb::RenderPass::get_color_output_count;
+	HPPRenderPass(
+	    HPPDevice                           &device,
+	    const std::vector<vkb::rendering::HPPAttachment> &attachments,
+	    const std::vector<vkb::common::HPPLoadStoreInfo> &load_store_infos,
+	    const std::vector<HPPSubpassInfo>   &subpasses);
 
-  public:
-	HPPRenderPass(vkb::core::HPPDevice                             &device,
-	              const std::vector<vkb::rendering::HPPAttachment> &attachments,
-	              const std::vector<vkb::common::HPPLoadStoreInfo> &load_store_infos,
-	              const std::vector<vkb::core::HPPSubpassInfo>     &subpasses) :
-	    vkb::RenderPass(reinterpret_cast<vkb::Device &>(device),
-	                    reinterpret_cast<std::vector<vkb::Attachment> const &>(attachments),
-	                    reinterpret_cast<std::vector<vkb::LoadStoreInfo> const &>(load_store_infos),
-	                    reinterpret_cast<std::vector<vkb::SubpassInfo> const &>(subpasses))
-	{}
+	HPPRenderPass(const HPPRenderPass &) = delete;
 
-	vk::RenderPass get_handle() const
-	{
-		return static_cast<vk::RenderPass>(vkb::RenderPass::get_handle());
-	}
+	HPPRenderPass(HPPRenderPass &&other);
 
-	const vk::Extent2D get_render_area_granularity() const
-	{
-		return static_cast<vk::Extent2D>(vkb::RenderPass::get_render_area_granularity());
-	}
+	~HPPRenderPass();
+
+	HPPRenderPass &operator=(const HPPRenderPass &) = delete;
+
+	HPPRenderPass &operator=(HPPRenderPass &&) = delete;
+
+	const uint32_t get_color_output_count(uint32_t subpass_index) const;
+
+	const VkExtent2D get_render_area_granularity() const;
+
+  private:
+	size_t subpass_count;
+
+	template <typename T_SubpassDescription, typename T_AttachmentDescription, typename T_AttachmentReference, typename T_SubpassDependency, typename T_RenderPassCreateInfo>
+	void create_renderpass(const std::vector<vkb::rendering::HPPAttachment> &attachments, const std::vector<vkb::common::HPPLoadStoreInfo> &load_store_infos, const std::vector<HPPSubpassInfo> &subpasses);
+
+	std::vector<uint32_t> color_output_count;
 };
 }        // namespace core
 }        // namespace vkb
+

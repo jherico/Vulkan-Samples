@@ -17,8 +17,13 @@
 
 #include "core/hpp_command_buffer.h"
 #include <core/hpp_command_pool.h>
-#include <core/hpp_device.h>
+#include <core/hpp_buffer.h>
+#include <core/hpp_query_pool.h>
+#include <core/hpp_sampler.h>
+#include <core/hpp_image_view.h>
 #include <core/hpp_pipeline.h>
+#include <core/hpp_device.h>
+#if 0
 #include <rendering/hpp_render_frame.h>
 
 namespace vkb
@@ -753,3 +758,4 @@ const bool HPPCommandBuffer::is_render_size_optimal(const vk::Extent2D &framebuf
 
 }        // namespace core
 }        // namespace vkb
+#endif

@@ -17,14 +17,14 @@
 
 #pragma once
 
-#include "pipeline_state.h"
-#include <vulkan/vulkan.hpp>
+#include <common/hpp_vk_common.h>
 
 namespace vkb
 {
 namespace core
 {
 class HPPPipelineLayout;
+class HPPRenderPass;
 }
 
 namespace rendering
@@ -46,17 +46,6 @@ struct HPPColorBlendState
 	vk::Bool32                                logic_op_enable = false;
 	vk::LogicOp                               logic_op        = vk::LogicOp::eClear;
 	std::vector<HPPColorBlendAttachmentState> attachments;
-};
-
-struct HPPDepthStencilState
-{
-	vk::Bool32     depth_test_enable        = true;
-	vk::Bool32     depth_write_enable       = true;
-	vk::CompareOp  depth_compare_op         = vk::CompareOp::eGreater;        // Note: Using reversed depth-buffer for increased precision, so Greater depth values are kept
-	vk::Bool32     depth_bounds_test_enable = false;
-	vk::Bool32     stencil_test_enable      = false;
-	StencilOpState front;
-	StencilOpState back;
 };
 
 struct HPPInputAssemblyState
@@ -85,8 +74,29 @@ struct HPPRasterizationState
 	vk::Bool32        depth_bias_enable         = false;
 };
 
-class HPPSpecializationConstantState : private vkb::SpecializationConstantState
-{};
+class HPPSpecializationConstantState 
+{
+  public:
+	void reset();
+
+	bool is_dirty() const;
+
+	void clear_dirty();
+
+	template <class T>
+	void set_constant(uint32_t constant_id, const T &data);
+
+	void set_constant(uint32_t constant_id, const std::vector<uint8_t> &data);
+
+	void set_specialization_constant_state(const std::unordered_map<uint32_t, std::vector<uint8_t>> &state);
+
+	const std::unordered_map<uint32_t, std::vector<uint8_t>> &get_specialization_constant_state() const;
+
+  private:
+	bool dirty{false};
+	// Map tracking state of the Specialization Constants
+	std::unordered_map<uint32_t, std::vector<uint8_t>> specialization_constant_state;
+};
 
 struct HPPStencilOpState
 {
@@ -108,81 +118,95 @@ struct HPPViewportState
 	uint32_t scissor_count  = 1;
 };
 
-class HPPPipelineState : private vkb::PipelineState
+
+struct HPPDepthStencilState
+{
+	vk::Bool32        depth_test_enable        = true;
+	vk::Bool32        depth_write_enable       = true;
+	vk::CompareOp     depth_compare_op         = vk::CompareOp::eGreater;        // Note: Using reversed depth-buffer for increased precision, so Greater depth values are kept
+	vk::Bool32        depth_bounds_test_enable = false;
+	vk::Bool32        stencil_test_enable      = false;
+	HPPStencilOpState front;
+	HPPStencilOpState back;
+};
+
+class HPPPipelineState 
 {
   public:
-	using vkb::PipelineState::clear_dirty;
-	using vkb::PipelineState::get_subpass_index;
-	using vkb::PipelineState::is_dirty;
-	using vkb::PipelineState::reset;
-	using vkb::PipelineState::set_specialization_constant;
-	using vkb::PipelineState::set_subpass_index;
+	void reset();
 
-  public:
-	const vkb::rendering::HPPColorBlendState &get_color_blend_state() const
-	{
-		return reinterpret_cast<vkb::rendering::HPPColorBlendState const &>(vkb::PipelineState::get_color_blend_state());
-	}
+	void set_pipeline_layout(core::HPPPipelineLayout &pipeline_layout);
 
-	const vkb::core::HPPPipelineLayout &get_pipeline_layout() const
-	{
-		return reinterpret_cast<vkb::core::HPPPipelineLayout const &>(vkb::PipelineState::get_pipeline_layout());
-	}
+	void set_render_pass(const core::HPPRenderPass &render_pass);
 
-	const vkb::core::HPPRenderPass *get_render_pass() const
-	{
-		return reinterpret_cast<vkb::core::HPPRenderPass const *>(vkb::PipelineState::get_render_pass());
-	}
+	void set_specialization_constant(uint32_t constant_id, const std::vector<uint8_t> &data);
 
-	const vkb::rendering::HPPSpecializationConstantState &get_specialization_constant_state() const
-	{
-		return reinterpret_cast<vkb::rendering::HPPSpecializationConstantState const &>(vkb::PipelineState::get_specialization_constant_state());
-	}
+	void set_vertex_input_state(const HPPVertexInputState &vertex_input_state);
 
-	void set_color_blend_state(const vkb::rendering::HPPColorBlendState &color_blend_state)
-	{
-		vkb::PipelineState::set_color_blend_state(reinterpret_cast<vkb::ColorBlendState const &>(color_blend_state));
-	}
+	void set_input_assembly_state(const HPPInputAssemblyState &input_assembly_state);
 
-	void set_depth_stencil_state(const vkb::rendering::HPPDepthStencilState &depth_stencil_state)
-	{
-		vkb::PipelineState::set_depth_stencil_state(reinterpret_cast<vkb::DepthStencilState const &>(depth_stencil_state));
-	}
+	void set_rasterization_state(const HPPRasterizationState &rasterization_state);
 
-	void set_input_assembly_state(const vkb::rendering::HPPInputAssemblyState &input_assembly_state)
-	{
-		vkb::PipelineState::set_input_assembly_state(reinterpret_cast<vkb::InputAssemblyState const &>(input_assembly_state));
-	}
+	void set_viewport_state(const HPPViewportState &viewport_state);
 
-	void set_multisample_state(const vkb::rendering::HPPMultisampleState &multisample_state)
-	{
-		vkb::PipelineState::set_multisample_state(reinterpret_cast<vkb::MultisampleState const &>(multisample_state));
-	}
+	void set_multisample_state(const HPPMultisampleState &multisample_state);
 
-	void set_pipeline_layout(vkb::core::HPPPipelineLayout &pipeline_layout)
-	{
-		vkb::PipelineState::set_pipeline_layout(reinterpret_cast<vkb::PipelineLayout &>(pipeline_layout));
-	}
+	void set_depth_stencil_state(const HPPDepthStencilState &depth_stencil_state);
 
-	void set_rasterization_state(const vkb::rendering::HPPRasterizationState &rasterization_state)
-	{
-		vkb::PipelineState::set_rasterization_state(reinterpret_cast<vkb::RasterizationState const &>(rasterization_state));
-	}
+	void set_color_blend_state(const HPPColorBlendState &color_blend_state);
 
-	void set_render_pass(const vkb::core::HPPRenderPass &render_pass)
-	{
-		vkb::PipelineState::set_render_pass(reinterpret_cast<vkb::RenderPass const &>(render_pass));
-	}
+	void set_subpass_index(uint32_t subpass_index);
 
-	void set_vertex_input_state(const vkb::rendering::HPPVertexInputState &vertex_input_state)
-	{
-		vkb::PipelineState::set_vertex_input_state(reinterpret_cast<vkb::VertexInputState const &>(vertex_input_state));
-	}
+	const core::HPPPipelineLayout &get_pipeline_layout() const;
 
-	void set_viewport_state(const vkb::rendering::HPPViewportState &viewport_state)
-	{
-		vkb::PipelineState::set_viewport_state(reinterpret_cast<vkb::ViewportState const &>(viewport_state));
-	}
+	const core::HPPRenderPass *get_render_pass() const;
+
+	const HPPSpecializationConstantState &get_specialization_constant_state() const;
+
+	const HPPVertexInputState &get_vertex_input_state() const;
+
+	const HPPInputAssemblyState &get_input_assembly_state() const;
+
+	const HPPRasterizationState &get_rasterization_state() const;
+
+	const HPPViewportState &get_viewport_state() const;
+
+	const HPPMultisampleState &get_multisample_state() const;
+
+	const HPPDepthStencilState &get_depth_stencil_state() const;
+
+	const HPPColorBlendState &get_color_blend_state() const;
+
+	uint32_t get_subpass_index() const;
+
+	bool is_dirty() const;
+
+	void clear_dirty();
+
+  private:
+	bool dirty{false};
+
+	core::HPPPipelineLayout *pipeline_layout{nullptr};
+
+	const core::HPPRenderPass *render_pass{nullptr};
+
+	HPPSpecializationConstantState specialization_constant_state{};
+
+	HPPVertexInputState vertex_input_state{};
+
+	HPPInputAssemblyState input_assembly_state{};
+
+	HPPRasterizationState rasterization_state{};
+
+	HPPViewportState viewport_state{};
+
+	HPPMultisampleState multisample_state{};
+
+	HPPDepthStencilState depth_stencil_state{};
+
+	HPPColorBlendState color_blend_state{};
+
+	uint32_t subpass_index{0U};
 };
 
 }        // namespace rendering

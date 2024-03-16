@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include "core/framebuffer.h"
 #include <vulkan/vulkan.hpp>
 
 namespace vkb
@@ -37,24 +36,31 @@ class HPPRenderPass;
  *
  * See vkb::Framebuffer for documentation
  */
-class HPPFramebuffer : private vkb::Framebuffer
+class HPPFramebuffer
 {
   public:
-	HPPFramebuffer(vkb::core::HPPDevice &device, const vkb::rendering::HPPRenderTarget &render_target, const vkb::core::HPPRenderPass &render_pass) :
-	    vkb::Framebuffer(reinterpret_cast<vkb::Device &>(device),
-	                     reinterpret_cast<vkb::RenderTarget const &>(render_target),
-	                     reinterpret_cast<vkb::RenderPass const &>(render_pass))
-	{}
+	HPPFramebuffer(HPPDevice &device, const rendering::HPPRenderTarget &render_target, const HPPRenderPass &render_pass);
 
-	const vk::Extent2D &get_extent() const
-	{
-		return reinterpret_cast<vk::Extent2D const &>(vkb::Framebuffer::get_extent());
-	}
+	HPPFramebuffer(const HPPFramebuffer &) = delete;
 
-	vk::Framebuffer get_handle() const
-	{
-		return static_cast<vk::Framebuffer>(vkb::Framebuffer::get_handle());
-	}
+	HPPFramebuffer(HPPFramebuffer &&other);
+
+	~HPPFramebuffer();
+
+	HPPFramebuffer &operator=(const HPPFramebuffer &) = delete;
+
+	HPPFramebuffer &operator=(HPPFramebuffer &&) = delete;
+
+	vk::Framebuffer get_handle() const;
+
+	const vk::Extent2D &get_extent() const;
+
+  private:
+	HPPDevice &device;
+
+	vk::Framebuffer handle;
+
+	vk::Extent2D extent;
 };
 }        // namespace core
 }        // namespace vkb

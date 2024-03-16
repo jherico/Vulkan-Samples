@@ -18,27 +18,21 @@
 #pragma once
 
 #include <core/hpp_command_buffer.h>
-#include <cstdint>
 
 namespace vkb
 {
-namespace rendering
-{
-class HPPRenderFrame;
-}
-
 namespace core
 {
-class HPPDevice;
-
 class HPPCommandPool
 {
+	using ResetMode = vkb::core::HPPCommandBuffer::ResetMode;
+
   public:
 	HPPCommandPool(HPPDevice                      &device,
 	               uint32_t                        queue_family_index,
 	               vkb::rendering::HPPRenderFrame *render_frame = nullptr,
 	               size_t                          thread_index = 0,
-	               HPPCommandBuffer::ResetMode     reset_mode   = HPPCommandBuffer::ResetMode::ResetPool);
+	               ResetMode                       reset_mode   = ResetMode::ResetPool);
 	HPPCommandPool(const HPPCommandPool &) = delete;
 	HPPCommandPool(HPPCommandPool &&other);
 	~HPPCommandPool();

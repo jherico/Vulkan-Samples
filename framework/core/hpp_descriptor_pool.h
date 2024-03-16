@@ -17,28 +17,69 @@
 
 #pragma once
 
-#include "descriptor_pool.h"
-#include <core/hpp_descriptor_set_layout.h>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
 namespace core
 {
-class HPPDevice;
-
 /**
- * @brief facade class around vkb::DescriptorPool, providing a vulkan.hpp-based interface
- *
- * See vkb::DescriptorPool for documentation
+ * @brief Manages an array of fixed size VkDescriptorPool and is able to allocate descriptor sets
  */
-class HPPDescriptorPool : private vkb::DescriptorPool
+class HPPDescriptorPool
 {
   public:
-	using vkb::DescriptorPool::reset;
+	static const uint32_t MAX_SETS_PER_POOL = 16;
 
-	HPPDescriptorPool(vkb::core::HPPDevice &device, const vkb::core::HPPDescriptorSetLayout &descriptor_set_layout, uint32_t pool_size = MAX_SETS_PER_POOL) :
-	    vkb::DescriptorPool(reinterpret_cast<vkb::Device &>(device), reinterpret_cast<vkb::DescriptorSetLayout const &>(descriptor_set_layout), pool_size)
-	{}
+	HPPDescriptorPool(HPPDevice                    &device,
+	               const HPPDescriptorSetLayout &descriptor_set_layout,
+	               uint32_t                   pool_size = MAX_SETS_PER_POOL);
+
+	HPPDescriptorPool(const HPPDescriptorPool &) = delete;
+
+	HPPDescriptorPool(HPPDescriptorPool &&) = default;
+
+	~HPPDescriptorPool();
+
+	HPPDescriptorPool &operator=(const HPPDescriptorPool &) = delete;
+
+	HPPDescriptorPool &operator=(HPPDescriptorPool &&) = delete;
+
+	void reset();
+
+	const HPPDescriptorSetLayout &get_descriptor_set_layout() const;
+
+	void set_descriptor_set_layout(const HPPDescriptorSetLayout &set_layout);
+
+	vk::DescriptorSet allocate();
+
+	vk::Result free(vk::DescriptorSet descriptor_set);
+
+  private:
+	HPPDevice &device;
+
+	const HPPDescriptorSetLayout *descriptor_set_layout{nullptr};
+
+	// Descriptor pool size
+	std::vector<vk::DescriptorPoolSize> pool_sizes;
+
+	// Number of sets to allocate for each pool
+	uint32_t pool_max_sets{0};
+
+	// Total descriptor pools created
+	std::vector<vk::DescriptorPool> pools;
+
+	// Count sets for each pool
+	std::vector<uint32_t> pool_sets_count;
+
+	// Current pool index to allocate descriptor set
+	uint32_t pool_index{0};
+
+	// Map between descriptor set and pool index
+	std::unordered_map<vk::DescriptorSet, uint32_t> set_pool_mapping;
+
+	// Find next pool index or create new pool
+	uint32_t find_available_pool(uint32_t pool_index);
 };
 }        // namespace core
 }        // namespace vkb

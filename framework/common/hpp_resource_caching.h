@@ -17,9 +17,13 @@
 
 #pragma once
 
-#include "resource_caching.h"
+#include <common/hpp_vk_common.h>
 #include <core/hpp_device.h>
-#include <vulkan/vulkan_hash.hpp>
+#include <core/hpp_image.h>
+#include <core/hpp_image_view.h>
+#include <core/hpp_render_pass.h>
+#include <rendering/hpp_render_target.h>
+
 
 namespace std
 {
@@ -80,7 +84,7 @@ struct hash<vkb::core::HPPDescriptorPool>
 {
 	size_t operator()(const vkb::core::HPPDescriptorPool &descriptor_pool) const
 	{
-		return std::hash<vkb::DescriptorPool>()(reinterpret_cast<vkb::DescriptorPool const &>(descriptor_pool));
+		return std::hash<vkb::core::HPPDescriptorPool>()(reinterpret_cast<vkb::core::HPPDescriptorPool const &>(descriptor_pool));
 	}
 };
 
@@ -106,7 +110,7 @@ struct hash<vkb::core::HPPDescriptorSetLayout>
 {
 	size_t operator()(const vkb::core::HPPDescriptorSetLayout &descriptor_set_layout) const
 	{
-		return std::hash<vkb::DescriptorSetLayout>()(reinterpret_cast<vkb::DescriptorSetLayout const &>(descriptor_set_layout));
+		return std::hash<vkb::core::HPPDescriptorSetLayout>()(reinterpret_cast<vkb::core::HPPDescriptorSetLayout const &>(descriptor_set_layout));
 	}
 };
 
@@ -147,7 +151,7 @@ struct hash<vkb::core::HPPRenderPass>
 {
 	size_t operator()(const vkb::core::HPPRenderPass &render_pass) const
 	{
-		return std::hash<vkb::RenderPass>()(reinterpret_cast<vkb::RenderPass const &>(render_pass));
+		return std::hash<vkb::core::HPPRenderPass>()(reinterpret_cast<vkb::core::HPPRenderPass const &>(render_pass));
 	}
 };
 
@@ -156,7 +160,7 @@ struct hash<vkb::core::HPPShaderModule>
 {
 	size_t operator()(const vkb::core::HPPShaderModule &shader_module) const
 	{
-		return std::hash<vkb::ShaderModule>()(reinterpret_cast<vkb::ShaderModule const &>(shader_module));
+		return std::hash<vkb::core::HPPShaderModule>()(reinterpret_cast<vkb::core::HPPShaderModule const &>(shader_module));
 	}
 };
 
@@ -190,7 +194,7 @@ struct hash<vkb::core::HPPShaderSource>
 {
 	size_t operator()(const vkb::core::HPPShaderSource &shader_source) const
 	{
-		return std::hash<vkb::ShaderSource>()(reinterpret_cast<vkb::ShaderSource const &>(shader_source));
+		return std::hash<vkb::core::HPPShaderSource>()(reinterpret_cast<vkb::core::HPPShaderSource const &>(shader_source));
 	}
 };
 
@@ -199,7 +203,7 @@ struct hash<vkb::core::HPPShaderVariant>
 {
 	size_t operator()(const vkb::core::HPPShaderVariant &shader_variant) const
 	{
-		return std::hash<vkb::ShaderVariant>()(reinterpret_cast<vkb::ShaderVariant const &>(shader_variant));
+		return std::hash<vkb::core::HPPShaderVariant>()(reinterpret_cast<vkb::core::HPPShaderVariant const &>(shader_variant));
 	}
 };
 
@@ -239,7 +243,7 @@ struct hash<vkb::rendering::HPPPipelineState>
 {
 	size_t operator()(const vkb::rendering::HPPPipelineState &pipeline_state) const
 	{
-		return std::hash<vkb::PipelineState>()(reinterpret_cast<vkb::PipelineState const &>(pipeline_state));
+		return std::hash<vkb::rendering::HPPPipelineState>()(pipeline_state);
 	}
 };
 
