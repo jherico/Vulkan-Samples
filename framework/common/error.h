@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <common/hpp_error.h>
 #include "common/strings.h"
 #include "core/util/logging.hpp"
 #include "vk_common.h"
@@ -56,28 +57,9 @@
 
 namespace vkb
 {
-/**
- * @brief Vulkan exception structure
- */
-class VulkanException : public std::runtime_error
-{
-  public:
-	/**
-	 * @brief Vulkan exception constructor
-	 */
-	VulkanException(VkResult result, const std::string &msg = "Vulkan error");
 
-	/**
-	 * @brief Returns the Vulkan error code as string
-	 * @return String message of exception
-	 */
-	const char *what() const noexcept override;
+using VulkanException = common::HPPVulkanException;
 
-	VkResult result;
-
-  private:
-	std::string error_message;
-};
 }        // namespace vkb
 
 /// @brief Helper macro to test the result of Vulkan calls which can return an error.

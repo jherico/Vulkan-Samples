@@ -17,38 +17,12 @@
 
 #pragma once
 
-#include "common/helpers.h"
-#include "common/vk_common.h"
-#include "core/vulkan_resource.h"
+#include <core/hpp_sampler.h>
 
 namespace vkb
 {
-class Device;
-
 namespace core
 {
-/**
- * @brief Represents a Vulkan Sampler
- */
-class Sampler : public VulkanResource<VkSampler, const Device>
-{
-  public:
-	/**
-	 * @brief Creates a Vulkan Sampler
-	 * @param d The device to use
-	 * @param info Creation details
-	 */
-	Sampler(Device const &d, const VkSamplerCreateInfo &info);
-
-	Sampler(const Sampler &) = delete;
-
-	Sampler(Sampler &&sampler);
-
-	~Sampler();
-
-	Sampler &operator=(const Sampler &) = delete;
-
-	Sampler &operator=(Sampler &&) = delete;
-};
+using Sampler = HPPSampler;
 }        // namespace core
 }        // namespace vkb

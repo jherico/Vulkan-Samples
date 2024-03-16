@@ -22,12 +22,12 @@
 #include "core/descriptor_set_layout.h"
 #include "core/framebuffer.h"
 #include "core/pipeline.h"
+#include "core/image_view.h"
 #include "rendering/pipeline_state.h"
 #include "rendering/render_target.h"
 #include "resource_record.h"
 
 #include "common/helpers.h"
-
 namespace std
 {
 template <>
@@ -708,7 +708,7 @@ struct RecordHelper<RenderPass, A...>
 		recorder.set_render_pass(index, render_pass);
 	}
 };
-
+#if 0
 template <class... A>
 struct RecordHelper<GraphicsPipeline, A...>
 {
@@ -722,6 +722,7 @@ struct RecordHelper<GraphicsPipeline, A...>
 		recorder.set_graphics_pipeline(index, graphics_pipeline);
 	}
 };
+#endif
 }        // namespace
 
 template <class T, class... A>

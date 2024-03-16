@@ -27,6 +27,7 @@ class RenderTarget;
 
 namespace core
 {
+class ImageView;
 /**
 * @brief A reference to a vkb::core::ImageView, plus an optional sampler for it
 *        - either coming from a vkb::RenderTarget or from a user-created Image.
