@@ -26,8 +26,7 @@
 namespace vkb
 {
 VulkanStatsProvider::VulkanStatsProvider(std::set<StatIndex>         &requested_stats,
-                                         const CounterSamplingConfig &sampling_config,
-                                         RenderContext               &render_context) :
+                                         const CounterSamplingConfig &sampling_config) :
     render_context(render_context)
 {
 	// Check all the Vulkan capabilities we require are present
@@ -36,7 +35,7 @@ VulkanStatsProvider::VulkanStatsProvider(std::set<StatIndex>         &requested_
 		return;
 	}
 
-	Device               &device = render_context.get_device();
+	Device               &device = RenderContext::get().get_device();
 	const PhysicalDevice &gpu    = device.get_gpu();
 
 	has_timestamps   = gpu.get_properties().limits.timestampComputeAndGraphics;

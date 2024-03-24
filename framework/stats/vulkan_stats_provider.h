@@ -83,8 +83,7 @@ class VulkanStatsProvider : public StatsProvider
 	 * @param sampling_config Sampling mode configuration (polling or continuous)
 	 * @param render_context The render context
 	 */
-	VulkanStatsProvider(std::set<StatIndex> &requested_stats, const CounterSamplingConfig &sampling_config,
-	                    RenderContext &render_context);
+	VulkanStatsProvider(std::set<StatIndex> &requested_stats, const CounterSamplingConfig &sampling_config);
 
 	/**
 	 * @brief Destructs a VulkanStatsProvider
@@ -132,9 +131,6 @@ class VulkanStatsProvider : public StatsProvider
 	float get_best_delta_time(float sw_delta_time) const;
 
   private:
-	// The render context
-	RenderContext &render_context;
-
 	// The query pool for the performance queries
 	std::unique_ptr<QueryPool> query_pool;
 
