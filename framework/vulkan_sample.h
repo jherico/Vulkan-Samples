@@ -99,26 +99,6 @@ namespace vkb
 class Gui;
 class RenderPipeline;
 
-namespace core
-{
-class HPPCommandBuffer;
-class HPPDebugUtils;
-class HPPDevice;
-class HPPInstance;
-class HPPPhysicalDevice;
-}        // namespace core
-
-namespace rendering
-{
-class HPPRenderContext;
-class HPPRenderTarget;
-}        // namespace rendering
-
-namespace stats
-{
-class HPPStats;
-}
-
 template <vkb::BindingType bindingType>
 class VulkanSample : public vkb::Application
 {

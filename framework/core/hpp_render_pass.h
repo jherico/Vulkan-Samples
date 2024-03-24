@@ -52,6 +52,7 @@ struct HPPSubpassInfo
 
 class HPPRenderPass : public HPPVulkanResource<vk::RenderPass>
 {
+  public:
 	HPPRenderPass(
 	    HPPDevice                           &device,
 	    const std::vector<vkb::rendering::HPPAttachment> &attachments,

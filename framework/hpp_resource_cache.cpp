@@ -17,17 +17,17 @@
 
 #include "hpp_resource_cache.h"
 
-#include <common/resource_caching.h>
 #include <common/hpp_resource_caching.h>
-#include <hpp_resource_record.h>
-#include <hpp_resource_replay.h>
 #include <core/hpp_descriptor_set.h>
+#include <core/hpp_descriptor_set_layout.h>
+#include <core/hpp_descriptor_pool.h>
 #include <core/hpp_device.h>
 #include <core/hpp_framebuffer.h>
-#include <core/hpp_pipeline_layout.h>
-#include <core/hpp_render_pass.h>
 #include <core/hpp_image_view.h>
 #include <core/hpp_pipeline_layout.h>
+#include <core/hpp_render_pass.h>
+#include <hpp_resource_record.h>
+#include <hpp_resource_replay.h>
 
 namespace vkb
 {
@@ -39,9 +39,8 @@ T &request_resource(
 {
 	std::lock_guard<std::mutex> guard(resource_mutex);
 
-	auto &res = vkb::common::request_resource(device, &recorder, resources, args...);
-
-	return res;
+	T &result = vkb::common::request_resource(device, &recorder, resources, args...);
+	return result;
 }
 }        // namespace
 
@@ -78,7 +77,10 @@ const HPPResourceCacheState &HPPResourceCache::get_internal_state() const
 
 vkb::core::HPPComputePipeline &HPPResourceCache::request_compute_pipeline(vkb::rendering::HPPPipelineState &pipeline_state)
 {
-	return request_resource(device, *recorder, compute_pipeline_mutex, state.compute_pipelines, pipeline_cache, pipeline_state);
+	return request_resource<
+	    vkb::core::HPPComputePipeline,
+	    vk::PipelineCache,
+	    vkb::rendering::HPPPipelineState>(device, *recorder, compute_pipeline_mutex, state.compute_pipelines, pipeline_cache, pipeline_state);
 }
 
 vkb::core::HPPDescriptorSet &HPPResourceCache::request_descriptor_set(vkb::core::HPPDescriptorSetLayout          &descriptor_set_layout,
@@ -204,10 +206,11 @@ void HPPResourceCache::update_descriptor_sets(const std::vector<vkb::core::HPPIm
 
 		// Generate new key
 		size_t new_key = 0U;
+		using namespace vkb::common;
 		hash_param(new_key, descriptor_set->get_layout(), descriptor_set->get_buffer_infos(), descriptor_set->get_image_infos());
 
 		// Add (key, resource) to the cache
-		state.descriptor_sets.emplace(new_key, std::make_unique<vkb::core::HPPDescriptorSet>(std::move(descriptor_set)));
+		state.descriptor_sets.emplace(new_key, std::move(descriptor_set));
 	}
 }
 
@@ -217,5 +220,3 @@ void HPPResourceCache::warmup(const std::vector<uint8_t> &data)
 	replayer->play(*this, *recorder);
 }
 }        // namespace vkb
-
-

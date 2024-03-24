@@ -25,9 +25,6 @@ namespace vkb
 {
 namespace core
 {
-class HPPDevice;
-class HPPImageView;
-class HPPImage;
 using HPPImagePtr = std::unique_ptr<HPPImage>;
 
 struct HPPImageBuilder : public allocated::HPPBuilder<HPPImageBuilder, vk::ImageCreateInfo>

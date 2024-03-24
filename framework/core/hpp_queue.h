@@ -17,14 +17,12 @@
 
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
 namespace core
 {
-class HPPCommandBuffer;
-class HPPDevice;
 
 /**
  * @brief A wrapper class for vk::Queue

@@ -16,13 +16,11 @@
  */
 
 #include "hpp_semaphore_pool.h"
-
-#if 0
-#include "core/device.h"
+#include "core/hpp_device.h"
 
 namespace vkb
 {
-HPPSemaphorePool::HPPSemaphorePool(HPPDevice &device) :
+HPPSemaphorePool::HPPSemaphorePool(core::HPPDevice &device) :
     device{device}
 {
 }
@@ -51,18 +49,7 @@ vk::Semaphore HPPSemaphorePool::request_semaphore_with_ownership()
 	}
 
 	// Otherwise, we need to create one, and don't keep track of it, app will release.
-	vk::Semaphore semaphore{VK_NULL_HANDLE};
-
-	VkSemaphoreCreateInfo create_info{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-
-	VkResult result = vkCreateSemaphore(device.get_handle(), &create_info, nullptr, &semaphore);
-
-	if (result != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create semaphore.");
-	}
-
-	return semaphore;
+	return device.get_handle().createSemaphore(vk::SemaphoreCreateInfo{});
 }
 
 void HPPSemaphorePool::release_owned_semaphore(vk::Semaphore semaphore)
@@ -105,4 +92,3 @@ uint32_t HPPSemaphorePool::get_active_semaphore_count() const
 	return active_semaphore_count;
 }
 }        // namespace vkb
-#endif

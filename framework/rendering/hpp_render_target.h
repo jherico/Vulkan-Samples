@@ -17,16 +17,13 @@
 
 #pragma once
 
+#include "common/hpp_vk_common.h"
 #include "core/hpp_image.h"
 #include <functional>
 #include <memory>
 
 namespace vkb
 {
-namespace core
-{
-class HPPDevice;
-}
 
 namespace rendering
 {
@@ -58,7 +55,7 @@ struct HPPAttachment
 class HPPRenderTarget
 {
   public:
-	using CreateFunc = std::function<std::unique_ptr<HPPRenderTarget>(core::HPPImage &&)>;
+	using CreateFunc = HPPRenderTargetCreateFunc;
 
 	static const CreateFunc DEFAULT_CREATE_FUNC;
 

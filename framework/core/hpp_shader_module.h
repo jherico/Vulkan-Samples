@@ -17,20 +17,16 @@
 
 #pragma once
 
-#include "core/shader_module.h"
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
+
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
+#	undef None
+#endif
 
 namespace vkb
 {
 namespace core
 {
-class HPPDevice;
-/**
- * @brief facade class around vkb::ShaderModule, providing a vulkan.hpp-based interface
- *
- * See vkb::ShaderModule for documentation
- */
-
 /// Types of shader resources
 enum class HPPShaderResourceType
 {
@@ -56,6 +52,18 @@ enum class HPPShaderResourceMode
 	UpdateAfterBind
 };
 
+/// A bitmask of qualifiers applied to a resource
+struct HPPShaderResourceQualifiers
+{
+	enum : uint32_t
+	{
+		None        = 0,
+		NonReadable = 1,
+		NonWritable = 2,
+	};
+};
+
+
 /// Store shader resource data.
 /// Used by the shader module.
 struct HPPShaderResource
@@ -77,39 +85,167 @@ struct HPPShaderResource
 	std::string           name;
 };
 
-class HPPShaderSource : private vkb::ShaderSource
+/**
+ * @brief Adds support for C style preprocessor macros to glsl shaders
+ *        enabling you to define or undefine certain symbols
+ */
+class HPPShaderVariant
 {
   public:
-	HPPShaderSource(const std::string &filename) :
-	    vkb::ShaderSource(filename)
-	{}
+	HPPShaderVariant() = default;
+
+	HPPShaderVariant(std::string &&preamble, std::vector<std::string> &&processes);
+
+	size_t get_id() const;
+
+	/**
+	 * @brief Add definitions to shader variant
+	 * @param definitions Vector of definitions to add to the variant
+	 */
+	void add_definitions(const std::vector<std::string> &definitions);
+
+	/**
+	 * @brief Adds a define macro to the shader
+	 * @param def String which should go to the right of a define directive
+	 */
+	void add_define(const std::string &def);
+
+	/**
+	 * @brief Adds an undef macro to the shader
+	 * @param undef String which should go to the right of an undef directive
+	 */
+	void add_undefine(const std::string &undef);
+
+	/**
+	 * @brief Specifies the size of a named runtime array for automatic reflection. If already specified, overrides the size.
+	 * @param runtime_array_name String under which the runtime array is named in the shader
+	 * @param size Integer specifying the wanted size of the runtime array (in number of elements, not size in bytes), used for automatic allocation of buffers.
+	 * See get_declared_struct_size_runtime_array() in spirv_cross.h
+	 */
+	void add_runtime_array_size(const std::string &runtime_array_name, size_t size);
+
+	void set_runtime_array_sizes(const std::unordered_map<std::string, size_t> &sizes);
+
+	const std::string &get_preamble() const;
+
+	const std::vector<std::string> &get_processes() const;
+
+	const std::unordered_map<std::string, size_t> &get_runtime_array_sizes() const;
+
+	void clear();
+
+  private:
+	size_t id;
+
+	std::string preamble;
+
+	std::vector<std::string> processes;
+
+	std::unordered_map<std::string, size_t> runtime_array_sizes;
+
+	void update_id();
 };
 
-class HPPShaderVariant : private vkb::ShaderVariant
-{};
-
-class HPPShaderModule : private vkb::ShaderModule
+class HPPShaderSource
 {
   public:
-	using vkb::ShaderModule::get_id;
+	HPPShaderSource() = default;
 
+	HPPShaderSource(const std::string &filename);
+
+	size_t get_id() const;
+
+	const std::string &get_filename() const;
+
+	void set_source(const std::string &source);
+
+	const std::string &get_source() const;
+
+  private:
+	size_t id;
+
+	std::string filename;
+
+	std::string source;
+};
+
+
+/**
+ * @brief Contains shader code, with an entry point, for a specific shader stage.
+ * It is needed by a PipelineLayout to create a Pipeline.
+ * HPPShaderModule can do auto-pairing between shader code and textures.
+ * The low level code can change bindings, just keeping the name of the texture.
+ * Variants for each texture are also generated, such as HAS_BASE_COLOR_TEX.
+ * It works similarly for attribute locations. A current limitation is that only set 0
+ * is considered. Uniform buffers are currently hardcoded as well.
+ */
+class HPPShaderModule
+{
   public:
-	HPPShaderModule(vkb::core::HPPDevice              &device,
-	                vk::ShaderStageFlagBits            stage,
-	                const vkb::core::HPPShaderSource  &glsl_source,
-	                const std::string                 &entry_point,
-	                const vkb::core::HPPShaderVariant &shader_variant) :
-	    vkb::ShaderModule(reinterpret_cast<vkb::Device &>(device),
-	                      static_cast<VkShaderStageFlagBits>(stage),
-	                      reinterpret_cast<vkb::ShaderSource const &>(glsl_source),
-	                      entry_point,
-	                      reinterpret_cast<vkb::ShaderVariant const &>(shader_variant))
-	{}
+	HPPShaderModule(HPPDevice               &device,
+	             vk::ShaderStageFlagBits stage,
+	             const HPPShaderSource   &glsl_source,
+	             const std::string    &entry_point,
+	             const HPPShaderVariant  &shader_variant);
 
-	const std::vector<vkb::core::HPPShaderResource> &get_resources() const
+	HPPShaderModule(const HPPShaderModule &) = delete;
+
+	HPPShaderModule(HPPShaderModule &&other);
+
+	HPPShaderModule &operator=(const HPPShaderModule &) = delete;
+
+	HPPShaderModule &operator=(HPPShaderModule &&) = delete;
+
+	size_t get_id() const;
+
+	vk::ShaderStageFlagBits get_stage() const;
+
+	const std::string &get_entry_point() const;
+
+	const std::vector<HPPShaderResource> &get_resources() const;
+
+	const std::string &get_info_log() const;
+
+	const std::vector<uint32_t> &get_binary() const;
+
+	inline const std::string &get_debug_name() const
 	{
-		return reinterpret_cast<std::vector<vkb::core::HPPShaderResource> const &>(vkb::ShaderModule::get_resources());
+		return debug_name;
 	}
+
+	inline void set_debug_name(const std::string &name)
+	{
+		debug_name = name;
+	}
+
+	/**
+	 * @brief Flags a resource to use a different method of being bound to the shader
+	 * @param resource_name The name of the shader resource
+	 * @param resource_mode The mode of how the shader resource will be bound
+	 */
+	void set_resource_mode(const std::string &resource_name, const HPPShaderResourceMode &resource_mode);
+
+  private:
+	HPPDevice &device;
+
+	/// Shader unique id
+	size_t id;
+
+	/// Stage of the shader (vertex, fragment, etc)
+	vk::ShaderStageFlagBits stage{};
+
+	/// Name of the main function
+	std::string entry_point;
+
+	/// Human-readable name for the shader
+	std::string debug_name;
+
+	/// Compiled source
+	std::vector<uint32_t> spirv;
+
+	std::vector<HPPShaderResource> resources;
+
+	std::string info_log;
 };
 
 }        // namespace core

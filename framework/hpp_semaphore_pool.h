@@ -21,12 +21,10 @@
 
 namespace vkb
 {
-class HPPDevice;
-
 class HPPSemaphorePool
 {
   public:
-	HPPSemaphorePool(HPPDevice &device);
+	HPPSemaphorePool(core::HPPDevice &device);
 
 	HPPSemaphorePool(const HPPSemaphorePool &) = delete;
 
@@ -47,7 +45,7 @@ class HPPSemaphorePool
 	uint32_t get_active_semaphore_count() const;
 
   private:
-	HPPDevice &device;
+	core::HPPDevice &device;
 
 	std::vector<vk::Semaphore> semaphores;
 	std::vector<vk::Semaphore> released_semaphores;

@@ -18,16 +18,11 @@
 #pragma once
 
 #include <core/hpp_shader_module.h>
-#include <vector>
-#include <vulkan/vulkan.hpp>
 
 namespace vkb
 {
 namespace core
 {
-class HPPDevice;
-class HPPDescriptorSetLayout;
-
 /**
  * @brief A wrapper class for vk::HPPPipelineLayout
  *

@@ -16,7 +16,14 @@
  */
 
 #include "hpp_render_frame.h"
+
 #include <common/hpp_resource_caching.h>
+#include <core/hpp_descriptor_pool.h>
+#include <core/hpp_descriptor_set_layout.h>
+#include <core/hpp_device.h>
+#include <core/hpp_buffer.h>
+#include <hpp_buffer_pool.h>
+#include <hpp_semaphore_pool.h>
 
 constexpr uint32_t BUFFER_POOL_BLOCK_SIZE = 256;
 
@@ -26,14 +33,14 @@ namespace rendering
 {
 HPPRenderFrame::HPPRenderFrame(vkb::core::HPPDevice &device, std::unique_ptr<vkb::rendering::HPPRenderTarget> &&render_target, size_t thread_count) :
     device{device},
-    fence_pool{device},
-    semaphore_pool{device},
+    fence_pool{std::make_unique<vkb::HPPFencePool>(device)},
+    semaphore_pool{std::make_unique<vkb::HPPSemaphorePool>(device)},
     swapchain_render_target{std::move(render_target)},
     thread_count{thread_count}
 {
 	for (auto &usage_it : supported_usage_map)
 	{
-		auto [buffer_pools_it, inserted] = buffer_pools.emplace(usage_it.first, std::vector<std::pair<vkb::HPPBufferPool, vkb::HPPBufferBlock *>>{});
+		auto [buffer_pools_it, inserted] = buffer_pools.emplace(usage_it.first, std::vector<std::pair<std::unique_ptr<vkb::HPPBufferPool>, vkb::HPPBufferBlock *>>{});
 		if (!inserted)
 		{
 			throw std::runtime_error("Failed to insert buffer pool");
@@ -41,14 +48,14 @@ HPPRenderFrame::HPPRenderFrame(vkb::core::HPPDevice &device, std::unique_ptr<vkb
 
 		for (size_t i = 0; i < thread_count; ++i)
 		{
-			buffer_pools_it->second.push_back(std::make_pair(vkb::HPPBufferPool{device, BUFFER_POOL_BLOCK_SIZE * 1024 * usage_it.second, usage_it.first}, nullptr));
+			buffer_pools_it->second.push_back(std::make_pair(std::make_unique<vkb::HPPBufferPool>(device, BUFFER_POOL_BLOCK_SIZE * 1024 * usage_it.second, usage_it.first), nullptr));
 		}
 	}
 
 	for (size_t i = 0; i < thread_count; ++i)
 	{
-		descriptor_pools.push_back(std::make_unique<std::unordered_map<std::size_t, vkb::core::HPPDescriptorPool>>());
-		descriptor_sets.push_back(std::make_unique<std::unordered_map<std::size_t, vkb::core::HPPDescriptorSet>>());
+		descriptor_pools.push_back({});
+		descriptor_sets.push_back({});
 	}
 }
 
@@ -74,7 +81,7 @@ vkb::HPPBufferAllocation HPPRenderFrame::allocate_buffer(const vk::BufferUsageFl
 	{
 		// If we are creating a buffer for each allocation of there is no block associated with the pool or the current block is too small
 		// for this allocation, request a new buffer block
-		buffer_block = &buffer_pool.request_buffer_block(size, want_minimal_block);
+		buffer_block = &buffer_pool->request_buffer_block(size, want_minimal_block);
 	}
 
 	return buffer_block->allocate(to_u32(size));
@@ -84,14 +91,14 @@ void HPPRenderFrame::clear_descriptors()
 {
 	for (auto &desc_sets_per_thread : descriptor_sets)
 	{
-		desc_sets_per_thread->clear();
+		desc_sets_per_thread.clear();
 	}
 
 	for (auto &desc_pools_per_thread : descriptor_pools)
 	{
-		for (auto &desc_pool : *desc_pools_per_thread)
+		for (auto &desc_pool : desc_pools_per_thread)
 		{
-			desc_pool.second.reset();
+			desc_pool.second->reset();
 		}
 	}
 }
@@ -160,7 +167,7 @@ vkb::core::HPPDevice &HPPRenderFrame::get_device()
 
 const vkb::HPPFencePool &HPPRenderFrame::get_fence_pool() const
 {
-	return fence_pool;
+	return *fence_pool;
 }
 
 vkb::rendering::HPPRenderTarget &HPPRenderFrame::get_render_target()
@@ -175,12 +182,12 @@ vkb::rendering::HPPRenderTarget const &HPPRenderFrame::get_render_target() const
 
 const vkb::HPPSemaphorePool &HPPRenderFrame::get_semaphore_pool() const
 {
-	return semaphore_pool;
+	return *semaphore_pool;
 }
 
 void HPPRenderFrame::release_owned_semaphore(vk::Semaphore semaphore)
 {
-	semaphore_pool.release_owned_semaphore(semaphore);
+	semaphore_pool->release_owned_semaphore(semaphore);
 }
 
 vkb::core::HPPCommandBuffer &HPPRenderFrame::request_command_buffer(const vkb::core::HPPQueue             &queue,
@@ -210,7 +217,7 @@ vk::DescriptorSet HPPRenderFrame::request_descriptor_set(const vkb::core::HPPDes
 	assert(thread_index < thread_count && "Thread index is out of bounds");
 
 	assert(thread_index < descriptor_pools.size());
-	auto &descriptor_pool = vkb::common::request_resource(device, nullptr, *descriptor_pools[thread_index], descriptor_set_layout);
+	auto &descriptor_pool = vkb::common::request_resource(device, nullptr, descriptor_pools[thread_index], descriptor_set_layout);
 	if (descriptor_management_strategy == DescriptorManagementStrategy::StoreInCache)
 	{
 		// The bindings we want to update before binding, if empty we update all bindings
@@ -224,7 +231,7 @@ vk::DescriptorSet HPPRenderFrame::request_descriptor_set(const vkb::core::HPPDes
 		// Request a descriptor set from the render frame, and write the buffer infos and image infos of all the specified bindings
 		assert(thread_index < descriptor_sets.size());
 		auto &descriptor_set =
-		    vkb::common::request_resource(device, nullptr, *descriptor_sets[thread_index], descriptor_set_layout, descriptor_pool, buffer_infos, image_infos);
+		    vkb::common::request_resource(device, nullptr, descriptor_sets[thread_index], descriptor_set_layout, descriptor_pool, buffer_infos, image_infos);
 		descriptor_set.update(bindings_to_update);
 		return descriptor_set.get_handle();
 	}
@@ -239,24 +246,23 @@ vk::DescriptorSet HPPRenderFrame::request_descriptor_set(const vkb::core::HPPDes
 
 vk::Fence HPPRenderFrame::request_fence()
 {
-	return fence_pool.request_fence();
+	return fence_pool->request_fence();
 }
 
 vk::Semaphore HPPRenderFrame::request_semaphore()
 {
-	return semaphore_pool.request_semaphore();
+	return semaphore_pool->request_semaphore();
 }
 
 vk::Semaphore HPPRenderFrame::request_semaphore_with_ownership()
 {
-	return semaphore_pool.request_semaphore_with_ownership();
+	return semaphore_pool->request_semaphore_with_ownership();
 }
 
 void HPPRenderFrame::reset()
 {
-	VK_CHECK(fence_pool.wait());
-
-	fence_pool.reset();
+	vk::resultCheck(fence_pool->wait(), "vkb::HPPFencePool::wait");
+	vk::resultCheck(fence_pool->reset(), "vkb::HPPFencePool::reset");
 
 	for (auto &command_pools_per_queue : command_pools)
 	{
@@ -296,10 +302,10 @@ void HPPRenderFrame::set_descriptor_management_strategy(DescriptorManagementStra
 void HPPRenderFrame::update_descriptor_sets(size_t thread_index)
 {
 	assert(thread_index < descriptor_sets.size());
-	auto &thread_descriptor_sets = *descriptor_sets[thread_index];
+	auto &thread_descriptor_sets = descriptor_sets[thread_index];
 	for (auto &descriptor_set_it : thread_descriptor_sets)
 	{
-		descriptor_set_it.second.update();
+		descriptor_set_it.second->update();
 	}
 }
 

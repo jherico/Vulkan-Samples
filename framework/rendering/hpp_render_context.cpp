@@ -17,12 +17,28 @@
 
 #include "hpp_render_context.h"
 
+#include <core/hpp_device.h>
+#include <core/hpp_image.h>
+#include <platform/window.h>
+#include <rendering/hpp_render_target.h>
+#include <rendering/hpp_render_frame.h>
+#include <core/hpp_swapchain.h>
 #include <core/hpp_image.h>
 
 namespace vkb
 {
 namespace rendering
 {
+static HPPRenderContext* instance = nullptr;
+
+HPPRenderContext &HPPRenderContext::get()
+{
+	if (!instance)
+	{
+		throw std::runtime_error("Render context not initialized");
+	}
+	return *instance;
+}
 vk::Format HPPRenderContext::DEFAULT_VK_FORMAT = vk::Format::eR8G8B8A8Srgb;
 
 HPPRenderContext::HPPRenderContext(vkb::core::HPPDevice                    &device,
@@ -33,6 +49,11 @@ HPPRenderContext::HPPRenderContext(vkb::core::HPPDevice                    &devi
                                    std::vector<vk::SurfaceFormatKHR> const &surface_format_priority_list) :
     device{device}, window{window}, queue{device.get_suitable_graphics_queue()}, surface_extent{window.get_extent().width, window.get_extent().height}
 {
+	if (instance != nullptr)
+	{
+		throw std::runtime_error("Render context already initialized");
+	}
+	instance = this;
 	vkb::core::HPPSwapchain::set_present_mode_priority_list(present_mode_priority_list);
 	vkb::core::HPPSwapchain::set_surface_format_priority_list(surface_format_priority_list);
 	if (surface)
@@ -49,8 +70,10 @@ HPPRenderContext::HPPRenderContext(vkb::core::HPPDevice                    &devi
 	}
 }
 
-void HPPRenderContext::prepare(size_t thread_count, vkb::rendering::HPPRenderTarget::CreateFunc create_render_target_func)
+void HPPRenderContext::prepare(size_t thread_count, vkb::rendering::HPPRenderTargetCreateFunc initial_create_render_target_func)
 {
+	create_render_target_func = initial_create_render_target_func ? initial_create_render_target_func : HPPRenderTarget::DEFAULT_CREATE_FUNC;
+
 	device.get_handle().waitIdle();
 
 	if (swapchain)
@@ -80,8 +103,6 @@ void HPPRenderContext::prepare(size_t thread_count, vkb::rendering::HPPRenderTar
 		auto render_target = create_render_target_func(std::move(color_image));
 		frames.emplace_back(std::make_unique<vkb::rendering::HPPRenderFrame>(device, std::move(render_target), thread_count));
 	}
-
-	this->create_render_target_func = create_render_target_func;
 	this->thread_count              = thread_count;
 	this->prepared                  = true;
 }

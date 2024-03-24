@@ -17,78 +17,132 @@
 
 #pragma once
 
-#include "buffer_pool.h"
-#include <core/hpp_buffer.h>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
+
 /**
- * @brief facade class around vkb::BufferAllocation, providing a vulkan.hpp-based interface
- *
- * See vkb::BufferAllocation for documentation
+ * @brief An allocation of vulkan memory; different buffer allocations,
+ *        with different offset and size, may come from the same Vulkan buffer
  */
-class HPPBufferAllocation : private vkb::BufferAllocation
+class HPPBufferAllocation
 {
   public:
-	using vkb::BufferAllocation::update;
+	HPPBufferAllocation() = default;
 
-  public:
-	vkb::core::HPPBuffer &get_buffer()
+	HPPBufferAllocation(core::HPPBuffer &buffer, vk::DeviceSize size, vk::DeviceSize offset);
+
+	HPPBufferAllocation(const HPPBufferAllocation &) = delete;
+
+	HPPBufferAllocation(HPPBufferAllocation &&) = default;
+
+	HPPBufferAllocation &operator=(const HPPBufferAllocation &) = delete;
+
+	HPPBufferAllocation &operator=(HPPBufferAllocation &&) = default;
+
+	void update(const std::vector<uint8_t> &data, vk::DeviceSize offset = 0);
+
+	template <class T>
+	void update(const T &value, uint32_t offset = 0)
 	{
-		return reinterpret_cast<vkb::core::HPPBuffer &>(vkb::BufferAllocation::get_buffer());
+		update(to_bytes(value), offset);
 	}
 
-	vk::DeviceSize get_offset() const
-	{
-		return static_cast<vk::DeviceSize>(vkb::BufferAllocation::get_offset());
-	}
+	bool empty() const;
 
-	vk::DeviceSize get_size() const
-	{
-		return static_cast<vk::DeviceSize>(vkb::BufferAllocation::get_size());
-	}
+	vk::DeviceSize get_size() const;
+
+	vk::DeviceSize get_offset() const;
+
+	core::HPPBuffer &get_buffer();
+
+  private:
+	core::HPPBuffer *buffer{nullptr};
+
+	vk::DeviceSize base_offset{0};
+
+	vk::DeviceSize size{0};
 };
 
 /**
- * @brief facade class around vkb::BufferBlock, providing a vulkan.hpp-based interface
- *
- * See vkb::BufferBlock for documentation
+ * @brief Helper class which handles multiple allocation from the same underlying Vulkan buffer.
  */
-class HPPBufferBlock : private vkb::BufferBlock
+class HPPBufferBlock
 {
   public:
-	vkb::HPPBufferAllocation allocate(vk::DeviceSize size)
-	{
-		vkb::BufferAllocation ba = vkb::BufferBlock::allocate(static_cast<VkDeviceSize>(size));
-		return std::move(*(reinterpret_cast<vkb::HPPBufferAllocation *>(&ba)));
-	}
+	HPPBufferBlock(core::HPPDevice &device, vk::DeviceSize size, const vk::BufferUsageFlags & usage, VmaMemoryUsage memory_usage);
 
-	bool can_allocate(vk::DeviceSize size) const
-	{
-		return vkb::BufferBlock::can_allocate(static_cast<VkDeviceSize>(size));
-	}
+	/**
+	 * @brief check if this HPPBufferBlock can allocate a given amount of memory
+	 * @param size the number of bytes to check
+	 * @return \c true if \a size bytes can be allocated from this \c HPPBufferBlock, otherwise \c false.
+	 */
+	bool can_allocate(vk::DeviceSize size) const;
+
+	/**
+	 * @return An usable view on a portion of the underlying buffer
+	 */
+	HPPBufferAllocation allocate(vk::DeviceSize size);
+
+	vk::DeviceSize get_size() const;
+
+	void reset();
+
+  private:
+	/**
+	 * @ brief Determine the current aligned offset.
+	 * @return The current aligned offset.
+	 */
+	vk::DeviceSize aligned_offset() const;
+
+  private:
+	std::unique_ptr<core::HPPBuffer> buffer;
+
+	// Memory alignment, it may change according to the usage
+	vk::DeviceSize alignment{0};
+
+	// Current offset, it increases on every allocation
+	vk::DeviceSize offset{0};
 };
 
 /**
- * @brief facade class around vkb::BufferPool, providing a vulkan.hpp-based interface
+ * @brief A pool of buffer blocks for a specific usage.
+ * It may contain inactive blocks that can be recycled.
  *
- * See vkb::BufferPool for documentation
+ * BufferPool is a linear allocator for buffer chunks, it gives you a view of the size you want.
+ * A HPPBufferBlock is the corresponding VkBuffer and you can get smaller offsets inside it.
+ * Since a shader cannot specify dynamic UBOs, it has to be done from the code
+ * (set_resource_dynamic).
+ *
+ * When a new frame starts, buffer blocks are returned: the offset is reset and contents are
+ * overwritten. The minimum allocation size is 256 kb, if you ask for more you get a dedicated
+ * buffer allocation.
+ *
+ * We re-use descriptor sets: we only need one for the corresponding buffer infos (and we only
+ * have one VkBuffer per HPPBufferBlock), then it is bound and we use dynamic offsets.
  */
-class HPPBufferPool : private vkb::BufferPool
+class HPPBufferPool
 {
   public:
-	using vkb::BufferPool::reset;
+	HPPBufferPool(core::HPPDevice &device, vk::DeviceSize block_size, const vk::BufferUsageFlags & usage, VmaMemoryUsage memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-	HPPBufferPool(
-	    vkb::core::HPPDevice &device, vk::DeviceSize block_size, vk::BufferUsageFlags usage, VmaMemoryUsage memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU) :
-	    vkb::BufferPool(
-	        reinterpret_cast<vkb::Device &>(device), static_cast<VkDeviceSize>(block_size), static_cast<VkBufferUsageFlags>(usage), memory_usage)
-	{
-	}
+	HPPBufferBlock &request_buffer_block(vk::DeviceSize minimum_size, bool minimal = false);
 
-	vkb::HPPBufferBlock &request_buffer_block(vk::DeviceSize minimum_size, bool minimal = false)
-	{
-		return reinterpret_cast<vkb::HPPBufferBlock &>(vkb::BufferPool::request_buffer_block(static_cast<VkDeviceSize>(minimum_size), minimal));
-	}
+	void reset();
+
+  private:
+	core::HPPDevice &device;
+
+	/// List of blocks requested
+	std::vector<std::unique_ptr<HPPBufferBlock>> buffer_blocks;
+
+	/// Minimum size of the blocks
+	vk::DeviceSize block_size{0};
+
+	vk::BufferUsageFlags usage;
+
+	VmaMemoryUsage memory_usage{};
 };
+
 }        // namespace vkb

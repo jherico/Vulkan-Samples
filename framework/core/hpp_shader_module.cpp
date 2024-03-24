@@ -25,6 +25,9 @@
 
 namespace vkb
 {
+namespace core
+{
+
 /**
  * @brief Pre-compiles project shader files to include header code
  * @param source The shader file
@@ -77,7 +80,7 @@ inline std::vector<uint8_t> convert_to_bytes(std::vector<std::string> &lines)
 	return bytes;
 }
 
-ShaderModule::ShaderModule(Device &device, VkShaderStageFlagBits stage, const ShaderSource &glsl_source, const std::string &entry_point, const ShaderVariant &shader_variant) :
+HPPShaderModule::HPPShaderModule(Device &device, vk::ShaderStageFlagBits stage, const HPPShaderSource &glsl_source, const std::string &entry_point, const HPPShaderVariant &shader_variant) :
     device{device},
     stage{stage},
     entry_point{entry_point}
@@ -88,7 +91,7 @@ ShaderModule::ShaderModule(Device &device, VkShaderStageFlagBits stage, const Sh
 	// Compiling from GLSL source requires the entry point
 	if (entry_point.empty())
 	{
-		throw VulkanException{VK_ERROR_INITIALIZATION_FAILED};
+		throw VulkanException{vk::Result::eErrorInitializationFailed};
 	}
 
 	auto &source = glsl_source.get_source();
@@ -96,7 +99,7 @@ ShaderModule::ShaderModule(Device &device, VkShaderStageFlagBits stage, const Sh
 	// Check if application is passing in GLSL source code to compile to SPIR-V
 	if (source.empty())
 	{
-		throw VulkanException{VK_ERROR_INITIALIZATION_FAILED};
+		throw VulkanException{vk::Result::eErrorInitializationFailed};
 	}
 
 	// Precompile source into the final spirv bytecode
@@ -105,19 +108,19 @@ ShaderModule::ShaderModule(Device &device, VkShaderStageFlagBits stage, const Sh
 	// Compile the GLSL source
 	GLSLCompiler glsl_compiler;
 
-	if (!glsl_compiler.compile_to_spirv(stage, convert_to_bytes(glsl_final_source), entry_point, shader_variant, spirv, info_log))
+	if (!glsl_compiler.compile_to_spirv(static_cast<VkShaderStageFlagBits>(stage), convert_to_bytes(glsl_final_source), entry_point, shader_variant, spirv, info_log))
 	{
 		LOGE("Shader compilation failed for shader \"{}\"", glsl_source.get_filename());
 		LOGE("{}", info_log);
-		throw VulkanException{VK_ERROR_INITIALIZATION_FAILED};
+		throw VulkanException{vk::Result::eErrorInitializationFailed};
 	}
 
 	SPIRVReflection spirv_reflection;
 
 	// Reflect all shader resources
-	if (!spirv_reflection.reflect_shader_resources(stage, spirv, resources, shader_variant))
+	if (!spirv_reflection.reflect_shader_resources(static_cast<VkShaderStageFlagBits>(stage), spirv, resources, shader_variant))
 	{
-		throw VulkanException{VK_ERROR_INITIALIZATION_FAILED};
+		throw VulkanException{vk::Result::eErrorInitializationFailed};
 	}
 
 	// Generate a unique id, determined by source and variant
@@ -126,7 +129,7 @@ ShaderModule::ShaderModule(Device &device, VkShaderStageFlagBits stage, const Sh
 	                        reinterpret_cast<const char *>(spirv.data() + spirv.size())});
 }
 
-ShaderModule::ShaderModule(ShaderModule &&other) :
+HPPShaderModule::HPPShaderModule(HPPShaderModule &&other) :
     device{other.device},
     id{other.id},
     stage{other.stage},
@@ -139,45 +142,45 @@ ShaderModule::ShaderModule(ShaderModule &&other) :
 	other.stage = {};
 }
 
-size_t ShaderModule::get_id() const
+size_t HPPShaderModule::get_id() const
 {
 	return id;
 }
 
-VkShaderStageFlagBits ShaderModule::get_stage() const
+vk::ShaderStageFlagBits HPPShaderModule::get_stage() const
 {
 	return stage;
 }
 
-const std::string &ShaderModule::get_entry_point() const
+const std::string &HPPShaderModule::get_entry_point() const
 {
 	return entry_point;
 }
 
-const std::vector<ShaderResource> &ShaderModule::get_resources() const
+const std::vector<HPPShaderResource> &HPPShaderModule::get_resources() const
 {
 	return resources;
 }
 
-const std::string &ShaderModule::get_info_log() const
+const std::string &HPPShaderModule::get_info_log() const
 {
 	return info_log;
 }
 
-const std::vector<uint32_t> &ShaderModule::get_binary() const
+const std::vector<uint32_t> &HPPShaderModule::get_binary() const
 {
 	return spirv;
 }
 
-void ShaderModule::set_resource_mode(const std::string &resource_name, const ShaderResourceMode &resource_mode)
+void HPPShaderModule::set_resource_mode(const std::string &resource_name, const HPPShaderResourceMode &resource_mode)
 {
 	auto it = std::find_if(resources.begin(), resources.end(), [&resource_name](const ShaderResource &resource) { return resource.name == resource_name; });
 
 	if (it != resources.end())
 	{
-		if (resource_mode == ShaderResourceMode::Dynamic)
+		if (resource_mode == HPPShaderResourceMode::Dynamic)
 		{
-			if (it->type == ShaderResourceType::BufferUniform || it->type == ShaderResourceType::BufferStorage)
+			if (it->type == HPPShaderResourceType::BufferUniform || it->type == HPPShaderResourceType::BufferStorage)
 			{
 				it->mode = resource_mode;
 			}
@@ -197,19 +200,19 @@ void ShaderModule::set_resource_mode(const std::string &resource_name, const Sha
 	}
 }
 
-ShaderVariant::ShaderVariant(std::string &&preamble, std::vector<std::string> &&processes) :
+HPPShaderVariant::HPPShaderVariant(std::string &&preamble, std::vector<std::string> &&processes) :
     preamble{std::move(preamble)},
     processes{std::move(processes)}
 {
 	update_id();
 }
 
-size_t ShaderVariant::get_id() const
+size_t HPPShaderVariant::get_id() const
 {
 	return id;
 }
 
-void ShaderVariant::add_definitions(const std::vector<std::string> &definitions)
+void HPPShaderVariant::add_definitions(const std::vector<std::string> &definitions)
 {
 	for (auto &definition : definitions)
 	{
@@ -217,7 +220,7 @@ void ShaderVariant::add_definitions(const std::vector<std::string> &definitions)
 	}
 }
 
-void ShaderVariant::add_define(const std::string &def)
+void HPPShaderVariant::add_define(const std::string &def)
 {
 	processes.push_back("D" + def);
 
@@ -235,7 +238,7 @@ void ShaderVariant::add_define(const std::string &def)
 	update_id();
 }
 
-void ShaderVariant::add_undefine(const std::string &undef)
+void HPPShaderVariant::add_undefine(const std::string &undef)
 {
 	processes.push_back("U" + undef);
 
@@ -244,7 +247,7 @@ void ShaderVariant::add_undefine(const std::string &undef)
 	update_id();
 }
 
-void ShaderVariant::add_runtime_array_size(const std::string &runtime_array_name, size_t size)
+void HPPShaderVariant::add_runtime_array_size(const std::string &runtime_array_name, size_t size)
 {
 	if (runtime_array_sizes.find(runtime_array_name) == runtime_array_sizes.end())
 	{
@@ -256,27 +259,27 @@ void ShaderVariant::add_runtime_array_size(const std::string &runtime_array_name
 	}
 }
 
-void ShaderVariant::set_runtime_array_sizes(const std::unordered_map<std::string, size_t> &sizes)
+void HPPShaderVariant::set_runtime_array_sizes(const std::unordered_map<std::string, size_t> &sizes)
 {
 	this->runtime_array_sizes = sizes;
 }
 
-const std::string &ShaderVariant::get_preamble() const
+const std::string &HPPShaderVariant::get_preamble() const
 {
 	return preamble;
 }
 
-const std::vector<std::string> &ShaderVariant::get_processes() const
+const std::vector<std::string> &HPPShaderVariant::get_processes() const
 {
 	return processes;
 }
 
-const std::unordered_map<std::string, size_t> &ShaderVariant::get_runtime_array_sizes() const
+const std::unordered_map<std::string, size_t> &HPPShaderVariant::get_runtime_array_sizes() const
 {
 	return runtime_array_sizes;
 }
 
-void ShaderVariant::clear()
+void HPPShaderVariant::clear()
 {
 	preamble.clear();
 	processes.clear();
@@ -284,13 +287,13 @@ void ShaderVariant::clear()
 	update_id();
 }
 
-void ShaderVariant::update_id()
+void HPPShaderVariant::update_id()
 {
 	std::hash<std::string> hasher{};
 	id = hasher(preamble);
 }
 
-ShaderSource::ShaderSource(const std::string &filename) :
+HPPShaderSource::HPPShaderSource(const std::string &filename) :
     filename{filename},
     source{fs::read_shader(filename)}
 {
@@ -298,25 +301,26 @@ ShaderSource::ShaderSource(const std::string &filename) :
 	id = hasher(std::string{this->source.cbegin(), this->source.cend()});
 }
 
-size_t ShaderSource::get_id() const
+size_t HPPShaderSource::get_id() const
 {
 	return id;
 }
 
-const std::string &ShaderSource::get_filename() const
+const std::string &HPPShaderSource::get_filename() const
 {
 	return filename;
 }
 
-void ShaderSource::set_source(const std::string &source_)
+void HPPShaderSource::set_source(const std::string &source_)
 {
 	source = source_;
 	std::hash<std::string> hasher{};
 	id = hasher(std::string{this->source.cbegin(), this->source.cend()});
 }
 
-const std::string &ShaderSource::get_source() const
+const std::string &HPPShaderSource::get_source() const
 {
 	return source;
 }
+}        // namespace core
 }        // namespace vkb

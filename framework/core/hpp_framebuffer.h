@@ -17,19 +17,13 @@
 
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
-namespace rendering
-{
-class HPPRenderTarget;
-}
 
 namespace core
 {
-class HPPDevice;
-class HPPRenderPass;
 
 /**
  * @brief facade class around vkb::Framebuffer, providing a vulkan.hpp-based interface

@@ -17,13 +17,16 @@
 
 #pragma once
 
-#include <core/hpp_device.h>
-#include <core/hpp_swapchain.h>
-#include <platform/window.h>
-#include <rendering/hpp_render_frame.h>
+#include "common/hpp_vk_common.h"
+// #include <core/hpp_device.h>
+// #include <core/hpp_swapchain.h>
+//  #include <platform/window.h>
+//  #include <rendering/hpp_render_frame.h>
 
 namespace vkb
 {
+class Window;
+
 namespace rendering
 {
 /**
@@ -34,6 +37,7 @@ namespace rendering
 class HPPRenderContext
 {
   public:
+	HPPRenderContext &get();
 	// The format to use for the RenderTargets if a swapchain isn't created
 	static vk::Format DEFAULT_VK_FORMAT;
 
@@ -69,7 +73,7 @@ class HPPRenderContext
 	 * @param thread_count The number of threads in the application, necessary to allocate this many resource pools for each RenderFrame
 	 * @param create_render_target_func A function delegate, used to create a RenderTarget
 	 */
-	void prepare(size_t thread_count = 1, HPPRenderTarget::CreateFunc create_render_target_func = HPPRenderTarget::DEFAULT_CREATE_FUNC);
+	void prepare(size_t thread_count = 1, HPPRenderTargetCreateFunc create_render_target_func = {});
 
 	/**
 	 * @brief Updates the swapchains extent, if a swapchain exists
@@ -117,7 +121,7 @@ class HPPRenderContext
 	 * @returns A valid command buffer to record commands to be submitted
 	 * Also ensures that there is an active frame if there is no existing active frame already
 	 */
-	vkb::core::HPPCommandBuffer &begin(vkb::core::HPPCommandBuffer::ResetMode reset_mode = vkb::core::HPPCommandBuffer::ResetMode::ResetPool);
+	vkb::core::HPPCommandBuffer &begin(vkb::core::HPPCommandBufferResetMode reset_mode = vkb::core::HPPCommandBufferResetMode::ResetPool);
 
 	/**
 	 * @brief Submits the command buffer to the right queue
@@ -229,7 +233,7 @@ class HPPRenderContext
 	/// Whether a frame is active or not
 	bool frame_active{false};
 
-	HPPRenderTarget::CreateFunc create_render_target_func = HPPRenderTarget::DEFAULT_CREATE_FUNC;
+	HPPRenderTargetCreateFunc create_render_target_func;
 
 	vk::SurfaceTransformFlagBitsKHR pre_transform{vk::SurfaceTransformFlagBitsKHR::eIdentity};
 

@@ -23,8 +23,6 @@ namespace vkb
 {
 namespace core
 {
-class HPPDevice;
-
 /// Inherit this for any Vulkan object with a handle of type `HPPHandle`.
 ///
 /// This allows the derived class to store a Vulkan handle, and also a pointer to the parent vkb::core::Device.

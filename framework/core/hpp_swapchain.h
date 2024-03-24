@@ -17,14 +17,12 @@
 
 #pragma once
 
-#include <set>
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
 namespace core
 {
-class HPPDevice;
 
 struct HPPSwapchainProperties
 {

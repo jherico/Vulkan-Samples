@@ -30,8 +30,6 @@ namespace vkb
 {
 namespace core
 {
-class HPPBuffer;
-
 class HPPDevice : public vkb::core::HPPVulkanResource<vk::Device>
 {
   public:

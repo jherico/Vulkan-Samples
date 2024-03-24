@@ -20,9 +20,15 @@
 #include <common/hpp_vk_common.h>
 #include <core/hpp_device.h>
 #include <core/hpp_image.h>
+#include <core/hpp_descriptor_pool.h>
+#include <core/hpp_descriptor_set.h>
+#include <core/hpp_descriptor_set_layout.h>
+#include <core/hpp_pipeline_layout.h>
 #include <core/hpp_image_view.h>
 #include <core/hpp_render_pass.h>
+#include <core/hpp_shader_module.h>
 #include <rendering/hpp_render_target.h>
+#include <rendering/hpp_pipeline_state.h>
 
 
 namespace std
@@ -79,12 +85,208 @@ struct hash<vkb::core::HPPVulkanResource<T>>
 	}
 };
 
+
+
+
+template <>
+struct hash<vkb::core::HPPShaderVariant>
+{
+	std::size_t operator()(const vkb::core::HPPShaderVariant &shader_variant) const
+	{
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, shader_variant.get_id());
+
+		return result;
+	}
+};
+
+template <>
+struct hash<vkb::core::HPPDescriptorSetLayout>
+{
+	std::size_t operator()(const vkb::core::HPPDescriptorSetLayout &descriptor_set_layout) const
+	{
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, descriptor_set_layout.get_handle());
+
+		return result;
+	}
+};
+
+template <>
+struct hash<vkb::core::HPPRenderPass>
+{
+	std::size_t operator()(const vkb::core::HPPRenderPass &render_pass) const
+	{
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, render_pass.get_handle());
+
+		return result;
+	}
+};
+
 template <>
 struct hash<vkb::core::HPPDescriptorPool>
 {
-	size_t operator()(const vkb::core::HPPDescriptorPool &descriptor_pool) const
+	std::size_t operator()(const vkb::core::HPPDescriptorPool &descriptor_pool) const
 	{
-		return std::hash<vkb::core::HPPDescriptorPool>()(reinterpret_cast<vkb::core::HPPDescriptorPool const &>(descriptor_pool));
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, descriptor_pool.get_descriptor_set_layout());
+
+		return result;
+	}
+};
+
+template <>
+struct hash<vkb::core::HPPShaderSource>
+{
+	std::size_t operator()(const vkb::core::HPPShaderSource &shader_source) const
+	{
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, shader_source.get_id());
+
+		return result;
+	}
+};
+
+template <>
+struct hash<vkb::rendering::HPPStencilOpState>
+{
+	std::size_t operator()(const vkb::rendering::HPPStencilOpState &stencil) const
+	{
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, stencil.compare_op);
+		vkb::hash_combine(result, stencil.depth_fail_op);
+		vkb::hash_combine(result, stencil.fail_op);
+		vkb::hash_combine(result, stencil.pass_op);
+
+		return result;
+	}
+};
+
+template <>
+struct hash<vkb::rendering::HPPSpecializationConstantState>
+{
+	std::size_t operator()(const vkb::rendering::HPPSpecializationConstantState &specialization_constant_state) const
+	{
+		std::size_t result = 0;
+
+		for (auto constants : specialization_constant_state.get_specialization_constant_state())
+		{
+			vkb::hash_combine(result, constants.first);
+			for (const auto data : constants.second)
+			{
+				vkb::hash_combine(result, data);
+			}
+		}
+
+		return result;
+	}
+};
+
+template <>
+struct hash<vkb::rendering::HPPColorBlendAttachmentState>
+{
+	std::size_t operator()(const vkb::rendering::HPPColorBlendAttachmentState &color_blend_attachment) const
+	{
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, color_blend_attachment.alpha_blend_op);
+		vkb::hash_combine(result, color_blend_attachment.blend_enable);
+		vkb::hash_combine(result, color_blend_attachment.color_blend_op);
+		vkb::hash_combine(result, color_blend_attachment.color_write_mask);
+		vkb::hash_combine(result, color_blend_attachment.dst_alpha_blend_factor);
+		vkb::hash_combine(result, color_blend_attachment.dst_color_blend_factor);
+		vkb::hash_combine(result, color_blend_attachment.src_alpha_blend_factor);
+		vkb::hash_combine(result, color_blend_attachment.src_color_blend_factor);
+
+		return result;
+	}
+};
+
+template <>
+struct hash<vkb::rendering::HPPPipelineState>
+{
+	std::size_t operator()(const vkb::rendering::HPPPipelineState &pipeline_state) const
+	{
+		std::size_t result = 0;
+
+		vkb::hash_combine(result, pipeline_state.get_pipeline_layout().get_handle());
+
+		// For graphics only
+		if (auto render_pass = pipeline_state.get_render_pass())
+		{
+			vkb::hash_combine(result, render_pass->get_handle());
+		}
+
+		vkb::hash_combine(result, pipeline_state.get_specialization_constant_state());
+
+		vkb::hash_combine(result, pipeline_state.get_subpass_index());
+
+		for (auto shader_module : pipeline_state.get_pipeline_layout().get_shader_modules())
+		{
+			vkb::hash_combine(result, shader_module->get_id());
+		}
+
+		// VkPipelineVertexInputStateCreateInfo
+		for (auto &attribute : pipeline_state.get_vertex_input_state().attributes)
+		{
+			vkb::hash_combine(result, attribute);
+		}
+
+		for (auto &binding : pipeline_state.get_vertex_input_state().bindings)
+		{
+			vkb::hash_combine(result, binding);
+		}
+
+		// VkPipelineInputAssemblyStateCreateInfo
+		vkb::hash_combine(result, pipeline_state.get_input_assembly_state().primitive_restart_enable);
+		vkb::hash_combine(result, static_cast<std::underlying_type<VkPrimitiveTopology>::type>(pipeline_state.get_input_assembly_state().topology));
+
+		// VkPipelineViewportStateCreateInfo
+		vkb::hash_combine(result, pipeline_state.get_viewport_state().viewport_count);
+		vkb::hash_combine(result, pipeline_state.get_viewport_state().scissor_count);
+
+		// VkPipelineRasterizationStateCreateInfo
+		vkb::hash_combine(result, pipeline_state.get_rasterization_state().cull_mode);
+		vkb::hash_combine(result, pipeline_state.get_rasterization_state().depth_bias_enable);
+		vkb::hash_combine(result, pipeline_state.get_rasterization_state().depth_clamp_enable);
+		vkb::hash_combine(result, pipeline_state.get_rasterization_state().front_face);
+		vkb::hash_combine(result, pipeline_state.get_rasterization_state().polygon_mode);
+		vkb::hash_combine(result, pipeline_state.get_rasterization_state().rasterizer_discard_enable);
+
+		// VkPipelineMultisampleStateCreateInfo
+		vkb::hash_combine(result, pipeline_state.get_multisample_state().alpha_to_coverage_enable);
+		vkb::hash_combine(result, pipeline_state.get_multisample_state().alpha_to_one_enable);
+		vkb::hash_combine(result, pipeline_state.get_multisample_state().min_sample_shading);
+		vkb::hash_combine(result, static_cast<std::underlying_type<VkSampleCountFlagBits>::type>(pipeline_state.get_multisample_state().rasterization_samples));
+		vkb::hash_combine(result, pipeline_state.get_multisample_state().sample_shading_enable);
+		vkb::hash_combine(result, pipeline_state.get_multisample_state().sample_mask);
+
+		// VkPipelineDepthStencilStateCreateInfo
+		vkb::hash_combine(result, pipeline_state.get_depth_stencil_state().back);
+		vkb::hash_combine(result, pipeline_state.get_depth_stencil_state().depth_bounds_test_enable);
+		vkb::hash_combine(result, static_cast<std::underlying_type<VkCompareOp>::type>(pipeline_state.get_depth_stencil_state().depth_compare_op));
+		vkb::hash_combine(result, pipeline_state.get_depth_stencil_state().depth_test_enable);
+		vkb::hash_combine(result, pipeline_state.get_depth_stencil_state().depth_write_enable);
+		vkb::hash_combine(result, pipeline_state.get_depth_stencil_state().front);
+		vkb::hash_combine(result, pipeline_state.get_depth_stencil_state().stencil_test_enable);
+
+		// VkPipelineColorBlendStateCreateInfo
+		vkb::hash_combine(result, static_cast<std::underlying_type<VkLogicOp>::type>(pipeline_state.get_color_blend_state().logic_op));
+		vkb::hash_combine(result, pipeline_state.get_color_blend_state().logic_op_enable);
+
+		for (auto &attachment : pipeline_state.get_color_blend_state().attachments)
+		{
+			vkb::hash_combine(result, attachment);
+		}
+
+		return result;
 	}
 };
 
@@ -102,15 +304,6 @@ struct hash<vkb::core::HPPDescriptorSet>
 		// write_descriptor_sets ?
 
 		return result;
-	}
-};
-
-template <>
-struct hash<vkb::core::HPPDescriptorSetLayout>
-{
-	size_t operator()(const vkb::core::HPPDescriptorSetLayout &descriptor_set_layout) const
-	{
-		return std::hash<vkb::core::HPPDescriptorSetLayout>()(reinterpret_cast<vkb::core::HPPDescriptorSetLayout const &>(descriptor_set_layout));
 	}
 };
 
@@ -147,24 +340,6 @@ struct hash<vkb::core::HPPImageView>
 };
 
 template <>
-struct hash<vkb::core::HPPRenderPass>
-{
-	size_t operator()(const vkb::core::HPPRenderPass &render_pass) const
-	{
-		return std::hash<vkb::core::HPPRenderPass>()(reinterpret_cast<vkb::core::HPPRenderPass const &>(render_pass));
-	}
-};
-
-template <>
-struct hash<vkb::core::HPPShaderModule>
-{
-	size_t operator()(const vkb::core::HPPShaderModule &shader_module) const
-	{
-		return std::hash<vkb::core::HPPShaderModule>()(reinterpret_cast<vkb::core::HPPShaderModule const &>(shader_module));
-	}
-};
-
-template <>
 struct hash<vkb::core::HPPShaderResource>
 {
 	size_t operator()(vkb::core::HPPShaderResource const &shader_resource) const
@@ -186,24 +361,6 @@ struct hash<vkb::core::HPPShaderResource>
 		vkb::hash_combine(result, shader_resource.qualifiers);
 		vkb::hash_combine(result, shader_resource.name);
 		return result;
-	}
-};
-
-template <>
-struct hash<vkb::core::HPPShaderSource>
-{
-	size_t operator()(const vkb::core::HPPShaderSource &shader_source) const
-	{
-		return std::hash<vkb::core::HPPShaderSource>()(reinterpret_cast<vkb::core::HPPShaderSource const &>(shader_source));
-	}
-};
-
-template <>
-struct hash<vkb::core::HPPShaderVariant>
-{
-	size_t operator()(const vkb::core::HPPShaderVariant &shader_variant) const
-	{
-		return std::hash<vkb::core::HPPShaderVariant>()(reinterpret_cast<vkb::core::HPPShaderVariant const &>(shader_variant));
 	}
 };
 
@@ -235,15 +392,6 @@ struct hash<vkb::rendering::HPPAttachment>
 		vkb::hash_combine(result, attachment.usage);
 		vkb::hash_combine(result, attachment.initial_layout);
 		return result;
-	}
-};
-
-template <>
-struct hash<vkb::rendering::HPPPipelineState>
-{
-	size_t operator()(const vkb::rendering::HPPPipelineState &pipeline_state) const
-	{
-		return std::hash<vkb::rendering::HPPPipelineState>()(pipeline_state);
 	}
 };
 
@@ -353,10 +501,28 @@ struct HPPRecordHelper<vkb::core::HPPGraphicsPipeline, A...>
 		recorder.set_graphics_pipeline(index, graphics_pipeline);
 	}
 };
+
+template <typename T>
+inline void hash_param(size_t &seed, const T &value)
+{
+	hash_combine(seed, value);
+}
+
+
+template <typename T, typename... Args>
+inline void hash_param(size_t &seed, const T &first_arg, const Args &...args)
+{
+	hash_param(seed, first_arg);
+
+	hash_param(seed, args...);
+}
+
 }        // namespace
 
+
+
 template <class T, class... A>
-T &request_resource(vkb::core::HPPDevice &device, vkb::HPPResourceRecord *recorder, std::unordered_map<size_t, T> &resources, A &...args)
+T &request_resource(vkb::core::HPPDevice &device, vkb::HPPResourceRecord *recorder, std::unordered_map<size_t, std::unique_ptr<T>> &resources, A &...args)
 {
 	HPPRecordHelper<T, A...> record_helper;
 
@@ -367,7 +533,7 @@ T &request_resource(vkb::core::HPPDevice &device, vkb::HPPResourceRecord *record
 
 	if (res_it != resources.end())
 	{
-		return res_it->second;
+		return *(res_it->second);
 	}
 
 	// If we do not have it already, create and cache it
@@ -381,9 +547,7 @@ T &request_resource(vkb::core::HPPDevice &device, vkb::HPPResourceRecord *record
 	try
 	{
 #endif
-		T resource(device, args...);
-
-		auto res_ins_it = resources.emplace(hash, std::move(resource));
+		auto res_ins_it = resources.emplace(hash, std::make_unique<T>(device, args...));
 
 		if (!res_ins_it.second)
 		{
@@ -395,7 +559,7 @@ T &request_resource(vkb::core::HPPDevice &device, vkb::HPPResourceRecord *record
 		if (recorder)
 		{
 			size_t index = record_helper.record(*recorder, args...);
-			record_helper.index(*recorder, index, res_it->second);
+			record_helper.index(*recorder, index, *(res_it->second));
 		}
 #ifndef DEBUG
 	}
@@ -406,7 +570,7 @@ T &request_resource(vkb::core::HPPDevice &device, vkb::HPPResourceRecord *record
 	}
 #endif
 
-	return res_it->second;
+	return *(res_it->second);
 }
 }        // namespace common
 }        // namespace vkb

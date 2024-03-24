@@ -15,31 +15,28 @@
  * limitations under the License.
  */
 
-#include "buffer_pool.h"
-
-#include <cstddef>
-
-#include "core/device.h"
-#include "core/util/logging.hpp"
+#include "hpp_buffer_pool.h"
+#include "core/hpp_buffer.h"
+#include "core/hpp_device.h"
 
 namespace vkb
 {
-BufferBlock::BufferBlock(Device &device, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage) :
-    buffer{device, size, usage, memory_usage}
+HPPBufferBlock::HPPBufferBlock(core::HPPDevice &device, vk::DeviceSize size, const vk::BufferUsageFlags& usage, VmaMemoryUsage memory_usage)
 {
-	if (usage == VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+	buffer = core::HPPBufferBuilder(size).with_usage(usage).with_vma_usage(memory_usage).build_unique(device);
+	if (usage & vk::BufferUsageFlagBits::eUniformBuffer)
 	{
 		alignment = device.get_gpu().get_properties().limits.minUniformBufferOffsetAlignment;
 	}
-	else if (usage == VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+	else if (usage & vk::BufferUsageFlagBits::eStorageBuffer)
 	{
 		alignment = device.get_gpu().get_properties().limits.minStorageBufferOffsetAlignment;
 	}
-	else if (usage == VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT)
+	else if (usage & vk::BufferUsageFlagBits::eUniformTexelBuffer)
 	{
 		alignment = device.get_gpu().get_properties().limits.minTexelBufferOffsetAlignment;
 	}
-	else if (usage == VK_BUFFER_USAGE_INDEX_BUFFER_BIT || usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT || usage == VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
+	else if (usage & vk::BufferUsageFlagBits::eIndexBuffer || usage & vk::BufferUsageFlagBits::eVertexBuffer || usage & vk::BufferUsageFlagBits::eIndirectBuffer)
 	{
 		// Used to calculate the offset, required when allocating memory (its value should be power of 2)
 		alignment = 16;
@@ -50,42 +47,42 @@ BufferBlock::BufferBlock(Device &device, VkDeviceSize size, VkBufferUsageFlags u
 	}
 }
 
-VkDeviceSize BufferBlock::aligned_offset() const
+vk::DeviceSize HPPBufferBlock::aligned_offset() const
 {
 	return (offset + alignment - 1) & ~(alignment - 1);
 }
 
-bool BufferBlock::can_allocate(VkDeviceSize size) const
+bool HPPBufferBlock::can_allocate(vk::DeviceSize size) const
 {
 	assert(size > 0 && "Allocation size must be greater than zero");
-	return (aligned_offset() + size <= buffer.get_size());
+	return (aligned_offset() + size <= buffer->get_size());
 }
 
-BufferAllocation BufferBlock::allocate(VkDeviceSize size)
+HPPBufferAllocation HPPBufferBlock::allocate(vk::DeviceSize size)
 {
 	if (can_allocate(size))
 	{
 		// Move the current offset and return an allocation
 		auto aligned = aligned_offset();
 		offset       = aligned + size;
-		return BufferAllocation{buffer, size, aligned};
+		return HPPBufferAllocation{*buffer, size, aligned};
 	}
 
 	// No more space available from the underlying buffer, return empty allocation
-	return BufferAllocation{};
+	return HPPBufferAllocation{};
 }
 
-VkDeviceSize BufferBlock::get_size() const
+vk::DeviceSize HPPBufferBlock::get_size() const
 {
-	return buffer.get_size();
+	return buffer->get_size();
 }
 
-void BufferBlock::reset()
+void HPPBufferBlock::reset()
 {
 	offset = 0;
 }
 
-BufferPool::BufferPool(Device &device, VkDeviceSize block_size, VkBufferUsageFlags usage, VmaMemoryUsage memory_usage) :
+HPPBufferPool::HPPBufferPool(core::HPPDevice &device, vk::DeviceSize block_size, const vk::BufferUsageFlags& usage, VmaMemoryUsage memory_usage) :
     device{device},
     block_size{block_size},
     usage{usage},
@@ -93,30 +90,30 @@ BufferPool::BufferPool(Device &device, VkDeviceSize block_size, VkBufferUsageFla
 {
 }
 
-BufferBlock &BufferPool::request_buffer_block(const VkDeviceSize minimum_size, bool minimal)
+HPPBufferBlock &HPPBufferPool::request_buffer_block(const vk::DeviceSize minimum_size, bool minimal)
 {
 	// Find a block in the range of the blocks which can fit the minimum size
 	auto it = minimal ? std::find_if(buffer_blocks.begin(),
 	                                 buffer_blocks.end(),
-	                                 [&minimum_size](const std::unique_ptr<BufferBlock> &buffer_block) { return (buffer_block->get_size() == minimum_size) && buffer_block->can_allocate(minimum_size); }) :
+	                                 [&minimum_size](const std::unique_ptr<HPPBufferBlock> &buffer_block) { return (buffer_block->get_size() == minimum_size) && buffer_block->can_allocate(minimum_size); }) :
 	                    std::find_if(buffer_blocks.begin(),
 	                                 buffer_blocks.end(),
-	                                 [&minimum_size](const std::unique_ptr<BufferBlock> &buffer_block) { return buffer_block->can_allocate(minimum_size); });
+	                                 [&minimum_size](const std::unique_ptr<HPPBufferBlock> &buffer_block) { return buffer_block->can_allocate(minimum_size); });
 
 	if (it == buffer_blocks.end())
 	{
 		LOGD("Building #{} buffer block ({})", buffer_blocks.size(), usage);
 
-		VkDeviceSize new_block_size = minimal ? minimum_size : std::max(block_size, minimum_size);
+		vk::DeviceSize new_block_size = minimal ? minimum_size : std::max(block_size, minimum_size);
 
 		// Create a new block and get the iterator on it
-		it = buffer_blocks.emplace(buffer_blocks.end(), std::make_unique<BufferBlock>(device, new_block_size, usage, memory_usage));
+		it = buffer_blocks.emplace(buffer_blocks.end(), std::make_unique<HPPBufferBlock>(device, new_block_size, usage, memory_usage));
 	}
 
 	return *it->get();
 }
 
-void BufferPool::reset()
+void HPPBufferPool::reset()
 {
 	for (auto &buffer_block : buffer_blocks)
 	{
@@ -124,20 +121,20 @@ void BufferPool::reset()
 	}
 }
 
-BufferAllocation::BufferAllocation(core::Buffer &buffer, VkDeviceSize size, VkDeviceSize offset) :
+HPPBufferAllocation::HPPBufferAllocation(core::HPPBuffer &buffer, vk::DeviceSize size, vk::DeviceSize offset) :
     buffer{&buffer},
     size{size},
     base_offset{offset}
 {
 }
 
-void BufferAllocation::update(const std::vector<uint8_t> &data, uint32_t offset)
+void HPPBufferAllocation::update(const std::vector<uint8_t> &data, vk::DeviceSize offset)
 {
 	assert(buffer && "Invalid buffer pointer");
 
 	if (offset + data.size() <= size)
 	{
-		buffer->update(data, to_u32(base_offset) + offset);
+		buffer->update(vk::ArrayProxy<const uint8_t>{data}, base_offset + offset);
 	}
 	else
 	{
@@ -145,22 +142,22 @@ void BufferAllocation::update(const std::vector<uint8_t> &data, uint32_t offset)
 	}
 }
 
-bool BufferAllocation::empty() const
+bool HPPBufferAllocation::empty() const
 {
 	return size == 0 || buffer == nullptr;
 }
 
-VkDeviceSize BufferAllocation::get_size() const
+vk::DeviceSize HPPBufferAllocation::get_size() const
 {
 	return size;
 }
 
-VkDeviceSize BufferAllocation::get_offset() const
+vk::DeviceSize HPPBufferAllocation::get_offset() const
 {
 	return base_offset;
 }
 
-core::Buffer &BufferAllocation::get_buffer()
+core::HPPBuffer &HPPBufferAllocation::get_buffer()
 {
 	assert(buffer && "Invalid buffer pointer");
 	return *buffer;

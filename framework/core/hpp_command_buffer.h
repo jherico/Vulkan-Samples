@@ -36,13 +36,7 @@ class HPPCommandBuffer : public core::HPPVulkanResource<vk::CommandBuffer>
 		const vkb::core::HPPRenderPass  *render_pass;
 		const vkb::core::HPPFramebuffer *framebuffer;
 	};
-
-	enum class ResetMode
-	{
-		ResetPool,
-		ResetIndividually,
-		AlwaysAllocate,
-	};
+	using ResetMode = HPPCommandBufferResetMode;
 
   public:
 	HPPCommandBuffer(vkb::core::HPPCommandPool &command_pool, vk::CommandBufferLevel level);

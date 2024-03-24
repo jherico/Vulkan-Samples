@@ -26,12 +26,6 @@
 
 namespace vkb
 {
-namespace core
-{
-class HPPDevice;
-
-}
-
 namespace allocated
 {
 

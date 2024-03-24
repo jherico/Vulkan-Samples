@@ -17,14 +17,13 @@
 
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
 namespace core
 {
 
-class HPPDevice;
 /**
  * @brief facade class around vkb::QueryPool, providing a vulkan.hpp-based interface
  *

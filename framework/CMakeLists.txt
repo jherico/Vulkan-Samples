@@ -231,6 +231,7 @@ set(STATS_FILES
     stats/hpp_stats.h
 
     # Source Files
+    stats/hpp_stats.cpp
     stats/stats.cpp
     stats/stats_provider.cpp
     stats/frame_time_stats_provider.cpp

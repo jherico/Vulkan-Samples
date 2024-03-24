@@ -17,9 +17,7 @@
 
 #pragma once
 
-#include <core/hpp_device.h>
-#include <hpp_semaphore_pool.h>
-#include <vulkan/vulkan_hash.hpp>
+#include "common/hpp_vk_common.h"
 
 namespace vkb
 {
@@ -100,10 +98,10 @@ class HPPRenderFrame
 	 * @param thread_index Selects the thread's command pool used to manage the buffer
 	 * @return A command buffer related to the current active frame
 	 */
-	vkb::core::HPPCommandBuffer &request_command_buffer(const vkb::core::HPPQueue             &queue,
-	                                                    vkb::core::HPPCommandBuffer::ResetMode reset_mode   = vkb::core::HPPCommandBuffer::ResetMode::ResetPool,
-	                                                    vk::CommandBufferLevel                 level        = vk::CommandBufferLevel::ePrimary,
-	                                                    size_t                                 thread_index = 0);
+	vkb::core::HPPCommandBuffer &request_command_buffer(const vkb::core::HPPQueue           &queue,
+	                                                    vkb::core::HPPCommandBufferResetMode reset_mode   = vkb::core::HPPCommandBufferResetMode::ResetPool,
+	                                                    vk::CommandBufferLevel               level        = vk::CommandBufferLevel::ePrimary,
+	                                                    size_t                               thread_index = 0);
 
 	/**
 	 * @brief Sets a new buffer allocation strategy
@@ -137,7 +135,7 @@ class HPPRenderFrame
 	 * @return The frame's command pool(s)
 	 */
 	std::vector<std::unique_ptr<vkb::core::HPPCommandPool>> &get_command_pools(const vkb::core::HPPQueue             &queue,
-	                                                                           vkb::core::HPPCommandBuffer::ResetMode reset_mode);
+	                                                                           vkb::core::HPPCommandBufferResetMode reset_mode);
 
 	static std::vector<uint32_t> collect_bindings_to_update(const vkb::core::HPPDescriptorSetLayout    &descriptor_set_layout,
 	                                                        const BindingMap<vk::DescriptorBufferInfo> &buffer_infos,
@@ -156,15 +154,18 @@ class HPPRenderFrame
 	/// Commands pools associated to the frame
 	std::map<uint32_t, std::vector<std::unique_ptr<vkb::core::HPPCommandPool>>> command_pools;
 
+	using DescriptorPoolCache = std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPDescriptorPool>>;
+	using DescriptorSetCache = std::unordered_map<std::size_t, std::unique_ptr<vkb::core::HPPDescriptorSet>>;
+
 	/// Descriptor pools for the frame
-	std::vector<std::unique_ptr<std::unordered_map<std::size_t, vkb::core::HPPDescriptorPool>>> descriptor_pools;
+	std::vector<DescriptorPoolCache> descriptor_pools;
 
 	/// Descriptor sets for the frame
-	std::vector<std::unique_ptr<std::unordered_map<std::size_t, vkb::core::HPPDescriptorSet>>> descriptor_sets;
+	std::vector<DescriptorSetCache> descriptor_sets;
 
-	vkb::HPPFencePool fence_pool;
+	std::unique_ptr<vkb::HPPFencePool> fence_pool;
 
-	vkb::HPPSemaphorePool semaphore_pool;
+	std::unique_ptr<vkb::HPPSemaphorePool> semaphore_pool;
 
 	size_t thread_count;
 
@@ -174,7 +175,7 @@ class HPPRenderFrame
 
 	DescriptorManagementStrategy descriptor_management_strategy{DescriptorManagementStrategy::StoreInCache};
 
-	std::map<vk::BufferUsageFlags, std::vector<std::pair<vkb::HPPBufferPool, vkb::HPPBufferBlock *>>> buffer_pools;
+	std::map<vk::BufferUsageFlags, std::vector<std::pair<std::unique_ptr<vkb::HPPBufferPool>, vkb::HPPBufferBlock *>>> buffer_pools;
 };
 }        // namespace rendering
 }        // namespace vkb

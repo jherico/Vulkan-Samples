@@ -19,31 +19,19 @@
 
 namespace vkb
 {
+class HPPBufferAllocation;
+class HPPBufferBlock;
+class HPPBufferPool;
+class HPPFencePool;
 class HPPResourceBindingState;
 class HPPResourceRecord;
 class HPPResourceReplay;
+class HPPSemaphorePool;
 
 namespace common
 {
 struct HPPLoadStoreInfo;
-}		// namespace common
-
-namespace rendering
-{
-struct HPPAttachment;
-class HPPLightingState;
-struct HPPColorBlendState;
-struct HPPDepthStencilState;
-struct HPPInputAssemblyState;
-struct HPPMultisampleState;
-class HPPPipelineState;
-struct HPPRasterizationState;
-class HPPRenderTarget;
-class HPPRenderFrame;
-class HPPSubpass;
-struct HPPVertexInputState;
-struct HPPViewportState;
-}        // namespace rendering
+}        // namespace common
 
 namespace core
 {
@@ -61,6 +49,7 @@ class HPPImage;
 class HPPPipelineLayout;
 class HPPGraphicsPipeline;
 class HPPQueryPool;
+class HPPQueue;
 class HPPRenderPass;
 class HPPSampler;
 class HPPShaderModule;
@@ -68,7 +57,33 @@ struct HPPShaderResource;
 class HPPShaderSource;
 class HPPShaderVariant;
 struct HPPSubpassInfo;
+class HPPSwapchain;
 
+enum class HPPCommandBufferResetMode
+{
+	ResetPool,
+	ResetIndividually,
+	AlwaysAllocate,
+};
 
 }        // namespace core
+
+namespace rendering
+{
+struct HPPAttachment;
+class HPPLightingState;
+struct HPPColorBlendState;
+struct HPPDepthStencilState;
+struct HPPInputAssemblyState;
+struct HPPMultisampleState;
+class HPPPipelineState;
+struct HPPRasterizationState;
+class HPPRenderTarget;
+class HPPRenderFrame;
+class HPPSubpass;
+struct HPPVertexInputState;
+struct HPPViewportState;
+using HPPRenderTargetCreateFunc = std::function<std::unique_ptr<HPPRenderTarget>(core::HPPImage &&)>;
+}        // namespace rendering
+
 }        // namespace vkb

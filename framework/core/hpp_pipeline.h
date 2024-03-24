@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <common/hpp_vk_common.h>
+#include "common/hpp_vk_common.h"
 #include <rendering/hpp_pipeline_state.h>
 
 namespace vkb
@@ -29,7 +29,6 @@ class HPPPipelineState;
 
 namespace core
 {
-class HPPDevice;
 
 class HPPPipeline
 {

@@ -27,7 +27,10 @@
 
 namespace vkb
 {
-enum class ShaderResourceType;
+namespace core
+{
+enum class HPPShaderResourceType;
+}
 
 namespace sg
 {
@@ -210,7 +213,7 @@ const std::string to_string(bool flag);
  * @param type Vulkan ShaderResourceType to convert
  * @return The string to return
  */
-const std::string to_string(ShaderResourceType type);
+const std::string to_string(core::HPPShaderResourceType type);
 
 /**
  * @brief Helper generic function to convert a bitmask to a string of its components
